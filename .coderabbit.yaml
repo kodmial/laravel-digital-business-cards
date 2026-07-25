@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+early_access: false
+reviews:
+  profile: followup
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+  path_instructions:
+    - path: src/**
+      instructions: |
+        This is a standalone Laravel package (digital-card-kit/laravel-digital-business-cards), not an application.
+        Every model class is resolved through config — always check that code uses `Config::model(...)` instead of
+        hardcoded `::class`. Relations must pass `Config::model(…)`, never a concrete class.
+        Controllers and form requests should use the `Support\ResolvesModels` trait for model resolution.
+        Everything reads config through `Support\Config` — never call `config('digital-business-cards.…')` directly.
+        Observers are attached via `#[ObservedBy]` attribute on model classes, not via `Model::observe()` in providers.
+        New media attributes need matching cleanup in observers.
+    - path: tests/**
+      instructions: |
+        Tests must use shipped factories from `database/factories/`, not hardcoded model instances.
+        Records come from factories; `tests/Concerns/CreatesCards` and `CreatesAdminRecords` are thin fixed-value
+        presets on top of factories for exact-rendering assertions.
+        Tests are grouped by concern into a handful of files (not one per class).
+        `PackageTest` asserts model indirection end-to-end with custom subclasses — a hardcoded model class will fail.
+        Filament providers are registered explicitly in `tests/TestCase.php`.
+    - path: routes/**
+      instructions: |
+        Routing reads config at provider boot — never hardcode URLs or route names.
+        Build them as e.g. `config('digital-business-cards.route_name_prefix', 'cards.').'show'`.
+        Write endpoints are throttled by named limiters from `Support\RateLimits`.
+    - path: resources/views/**
+      instructions: |
+        Check for proper Blade escaping. CSS escaping of hero background paths is critical.
+        Theming tokens come from `Support\CardTheme::tokens()` — verify all views render from these tokens.
+    - path: resources/lang/**
+      instructions: |
+        Every user-visible string must be translated. Public copy uses `digital-business-cards::messages.*`;
+        Filament labels use `digital-business-cards::admin.*`. Both `en` and `ru` must be maintained.
+  tools:
+    phpstan:
+      enabled: true
+      level: 5
+    php_codesniffer:
+      enabled: false
+    rubocop:
+      enabled: false
+    stylelint:
+      enabled: false
+    shellcheck:
+      enabled: false
+    markdownlint:
+      enabled: false
+    gitleaks:
+      enabled: false
+    checkov:
+      enabled: false
+    detekt:
+      enabled: false
+    eslint:
+      enabled: true
+    hadolint:
+      enabled: false
+    staticcheck:
+      enabled: false
+    psalm:
+      enabled: false
+    reek:
+      enabled: false
+  exclude_files:
+    - CHANGELOG.md
+    - phpstan-baseline.neon
+chat:
+  auto_reply: true
