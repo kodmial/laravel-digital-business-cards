@@ -3,35 +3,34 @@
 use DigitalCardKit\Laravel\Http\Controllers\AssetController;
 use DigitalCardKit\Laravel\Http\Controllers\DigitalBusinessCardController;
 use DigitalCardKit\Laravel\Http\Controllers\DigitalBusinessCardLeadExportController;
+use DigitalCardKit\Laravel\Support\Config;
+use DigitalCardKit\Laravel\Support\RateLimits;
 use Illuminate\Support\Facades\Route;
 
-$prefix = trim((string) config('digital-business-cards.route_prefix', 'card'), '/');
-$namePrefix = (string) config('digital-business-cards.route_name_prefix', 'cards.');
-$assetPrefix = trim((string) config('digital-business-cards.asset_route_prefix', 'digital-business-cards/assets'), '/');
-$middleware = config('digital-business-cards.route_middleware', ['web']);
+$middleware = Config::middleware('route_middleware');
 
 Route::middleware($middleware)
-    ->get($assetPrefix.'/{file}', AssetController::class)
-    ->whereIn('file', ['card.css', 'card.js'])
-    ->name($namePrefix.'assets');
+    ->get(Config::assetRoutePrefix().'/{file}', AssetController::class)
+    ->whereIn('file', AssetController::FILES)
+    ->name(Config::routeName('assets'));
 
 Route::middleware($middleware)
-    ->prefix($prefix)
-    ->name($namePrefix)
+    ->prefix(Config::routePrefix())
+    ->name(Config::routeName())
     ->group(function (): void {
         Route::get('/{card}', [DigitalBusinessCardController::class, 'show'])->name('show');
         Route::get('/{card}/contact.vcf', [DigitalBusinessCardController::class, 'download'])->name('download');
         Route::post('/{card}/contacts', [DigitalBusinessCardController::class, 'submitLead'])
-            ->middleware(config('digital-business-cards.lead_middleware', ['throttle:10,1']))
+            ->middleware(Config::middleware('lead_middleware', ['throttle:'.RateLimits::LEADS]))
             ->name('leads.store');
         Route::post('/{card}/events', [DigitalBusinessCardController::class, 'event'])
-            ->middleware(config('digital-business-cards.event_middleware', ['throttle:120,1']))
+            ->middleware(Config::middleware('event_middleware', ['throttle:'.RateLimits::EVENTS]))
             ->name('events.store');
     });
 
-Route::middleware(config('digital-business-cards.lead_export.middleware', ['web']))
+Route::middleware(Config::middleware('lead_export.middleware'))
     ->get(
-        config('digital-business-cards.lead_export.path', 'admin/digital-business-card-leads-export'),
+        (string) Config::get('lead_export.path', 'admin/digital-business-card-leads-export'),
         DigitalBusinessCardLeadExportController::class,
     )
-    ->name(config('digital-business-cards.lead_export.route_name', 'admin.cards.leads.export'));
+    ->name(Config::leadExportRouteName());

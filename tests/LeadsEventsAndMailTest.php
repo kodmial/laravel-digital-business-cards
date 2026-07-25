@@ -7,6 +7,7 @@ use DigitalCardKit\Laravel\Listeners\QueueContactExchangeNotifications;
 use DigitalCardKit\Laravel\Listeners\SendContactExchangeNotifications;
 use DigitalCardKit\Laravel\Mail\ContactExchangeConfirmation;
 use DigitalCardKit\Laravel\Mail\ContactExchangeReceived;
+use DigitalCardKit\Laravel\Models\DigitalBusinessCardBlock;
 use DigitalCardKit\Laravel\Notifications\LaravelMailNotificationSender;
 use DigitalCardKit\Laravel\Notifications\NotificationSender;
 use DigitalCardKit\Laravel\Tests\Concerns\CreatesCards;
@@ -52,10 +53,40 @@ class LeadsEventsAndMailTest extends TestCase
     {
         $this->createCard();
         $this->post('/card/example-card/events', ['type' => 'invalid'])->assertSessionHasErrors('type');
-        $this->post('/card/example-card/events', ['type' => 'cta', 'block_id' => 99999])->assertStatus(422);
+        $this->post('/card/example-card/events', ['type' => 'cta', 'block_id' => 99999])
+            ->assertSessionHasErrors('block_id');
 
         $this->createCard(['slug' => 'private', 'is_published' => false]);
         $this->post('/card/private/events', ['type' => 'contact'])->assertNotFound();
+    }
+
+    public function test_event_endpoint_answers_json_clients_with_422_validation_errors(): void
+    {
+        $this->createCard();
+
+        // This is the shape the packaged card.js actually sends.
+        $this->postJson('/card/example-card/events', ['type' => 'invalid'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('type');
+        $this->postJson('/card/example-card/events', ['type' => 'cta', 'block_id' => 99999])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('block_id');
+    }
+
+    public function test_a_block_belonging_to_another_card_or_disabled_is_not_accepted(): void
+    {
+        $card = $this->createCard();
+        $other = $this->createCard(['slug' => 'other-card']);
+        $foreign = DigitalBusinessCardBlock::factory()->for($other, 'card')->create();
+        $disabled = DigitalBusinessCardBlock::factory()->for($card, 'card')->create(['is_enabled' => false]);
+
+        $this->postJson('/card/example-card/events', ['type' => 'cta', 'block_id' => $foreign->id])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('block_id');
+        $this->postJson('/card/example-card/events', ['type' => 'cta', 'block_id' => $disabled->id])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('block_id');
+        $this->assertSame(0, $card->events()->count());
     }
 
     public function test_configured_lead_fields_are_validated_stored_and_dispatched(): void
@@ -158,7 +189,7 @@ class LeadsEventsAndMailTest extends TestCase
             ->assertSee('name="consent"', false)
             ->assertSee('data-inline-lead-form', false)
             ->assertSee('data-modal="success"', false)
-            ->assertSee('Ваши контакты успешно отправлены')
+            ->assertSee('Your contact details have been sent')
             ->assertSee('>OK<', false);
     }
 
@@ -193,11 +224,10 @@ class LeadsEventsAndMailTest extends TestCase
         $sender->shouldReceive('sendContactExchange')->once()
             ->with(\Mockery::on(fn ($actual): bool => $actual->is($lead)));
 
-        $event = new ContactExchangeCompleted($lead);
+        $event = new ContactExchangeCompleted($lead->getKey());
         (new SendContactExchangeNotifications($sender))->handle($event);
 
         $this->assertInstanceOf(ShouldDispatchAfterCommit::class, $event);
-        $this->assertFalse($event->lead->relationLoaded('card'));
     }
 
     public function test_queued_listener_uses_configured_connection_and_queue(): void

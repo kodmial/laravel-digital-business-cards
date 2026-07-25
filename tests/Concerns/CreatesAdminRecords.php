@@ -17,22 +17,23 @@ trait CreatesAdminRecords
         ]);
     }
 
+    /** @param  array<string, mixed>  $attributes */
     protected function createAdminCard(array $attributes = []): DigitalBusinessCard
     {
-        return DigitalBusinessCard::query()->create(array_merge([
+        return DigitalBusinessCard::factory()->published()->create(array_merge([
             'slug' => 'admin-check',
             'first_name' => 'Alex',
             'last_name' => 'Morgan',
-            'is_published' => true,
             'contact_methods' => [
                 ['type' => 'phone', 'label' => 'Phone', 'value' => '+1 202 555 0123'],
             ],
         ], $attributes));
     }
 
+    /** @param  array<string, mixed>  $attributes */
     protected function createAdminLead(DigitalBusinessCard $card, array $attributes = []): DigitalBusinessCardLead
     {
-        return $card->leads()->create(array_merge([
+        return DigitalBusinessCardLead::factory()->for($card, 'card')->create(array_merge([
             'name' => 'Taylor Smith',
             'phone' => '+1 202 555 0199',
             'email' => 'taylor@example.test',

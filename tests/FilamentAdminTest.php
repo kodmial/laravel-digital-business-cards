@@ -5,9 +5,12 @@ namespace DigitalCardKit\Laravel\Tests;
 use DigitalCardKit\Laravel\DigitalBusinessCardsPlugin;
 use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCardLeads\DigitalBusinessCardLeadResource;
 use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\DigitalBusinessCardResource;
+use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\Pages\CreateDigitalBusinessCard;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use DigitalCardKit\Laravel\Tests\Concerns\CreatesAdminRecords;
 use Filament\Facades\Filament;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Schema;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Validator;
@@ -15,6 +18,33 @@ use Illuminate\Support\Facades\Validator;
 class FilamentAdminTest extends TestCase
 {
     use CreatesAdminRecords;
+
+    private function cardForm(): Schema
+    {
+        return DigitalBusinessCardResource::form(Schema::make(new CreateDigitalBusinessCard));
+    }
+
+    /** Breadth-first search of the form tree for a field by its name. */
+    private function findFormComponent(string $name): ?Component
+    {
+        $queue = $this->cardForm()->getComponents();
+
+        while ($queue !== []) {
+            $component = array_shift($queue);
+
+            // Only fields carry a name; layout components (tabs, sections)
+            // do not implement it at all.
+            if (method_exists($component, 'getName') && $component->getName() === $name) {
+                return $component;
+            }
+
+            foreach ($component->getChildComponents() as $child) {
+                $queue[] = $child;
+            }
+        }
+
+        return null;
+    }
 
     public function test_testbench_panel_registers_the_plugin_resources_and_admin_routes(): void
     {
@@ -35,6 +65,67 @@ class FilamentAdminTest extends TestCase
         ] as $name) {
             $this->assertTrue(Route::has($name), "Missing package admin route [{$name}].");
         }
+    }
+
+    public function test_resource_labels_follow_the_application_locale(): void
+    {
+        $this->assertSame('Digital business cards', DigitalBusinessCardResource::getNavigationLabel());
+        $this->assertSame('digital business card', DigitalBusinessCardResource::getModelLabel());
+        $this->assertSame('Collected contacts', DigitalBusinessCardLeadResource::getNavigationLabel());
+        $this->assertSame('Business cards', DigitalBusinessCardResource::getNavigationGroup());
+
+        $this->app->setLocale('ru');
+
+        $this->assertSame('Электронные визитки', DigitalBusinessCardResource::getNavigationLabel());
+        $this->assertSame('электронная визитка', DigitalBusinessCardResource::getModelLabel());
+        $this->assertSame('Собранные контакты', DigitalBusinessCardLeadResource::getNavigationLabel());
+        $this->assertSame('Визитки', DigitalBusinessCardResource::getNavigationGroup());
+    }
+
+    public function test_both_resources_share_one_navigation_group_so_they_stay_together(): void
+    {
+        $this->assertSame(
+            DigitalBusinessCardResource::getNavigationGroup(),
+            DigitalBusinessCardLeadResource::getNavigationGroup(),
+        );
+    }
+
+    public function test_the_card_form_builds_every_tab_without_leaking_translation_keys(): void
+    {
+        $components = $this->cardForm()->getComponents();
+
+        $this->assertCount(1, $components);
+        $tabs = $components[0]->getChildComponents();
+        $this->assertCount(5, $tabs);
+        $this->assertSame(
+            ['Profile', 'Contacts', 'Content blocks', 'Design and SEO', 'Contact collection'],
+            array_map(static fn ($tab): string => $tab->getLabel(), $tabs),
+        );
+    }
+
+    public function test_uploads_target_the_configured_disk_and_directories(): void
+    {
+        config([
+            'digital-business-cards.storage_disk' => 'media',
+            'digital-business-cards.media_directories.avatars' => 'custom/avatars',
+        ]);
+
+        $upload = $this->findFormComponent('avatar');
+
+        $this->assertNotNull($upload);
+        $this->assertSame('media', $upload->getDiskName());
+        $this->assertSame('custom/avatars', $upload->getDirectory());
+    }
+
+    public function test_notification_addresses_are_validated_as_emails(): void
+    {
+        $validator = Validator::make(
+            ['lead_notification_emails' => ['ok@example.test', 'not-an-email']],
+            ['lead_notification_emails.*' => ['email:rfc']],
+        );
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('lead_notification_emails.1', $validator->errors()->messages());
     }
 
     public function test_guests_are_redirected_from_all_package_admin_pages(): void

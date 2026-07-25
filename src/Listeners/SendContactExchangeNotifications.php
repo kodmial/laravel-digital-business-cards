@@ -3,7 +3,9 @@
 namespace DigitalCardKit\Laravel\Listeners;
 
 use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
+use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
 use DigitalCardKit\Laravel\Notifications\NotificationSender;
+use DigitalCardKit\Laravel\Support\Config;
 
 class SendContactExchangeNotifications
 {
@@ -11,6 +13,9 @@ class SendContactExchangeNotifications
 
     public function handle(ContactExchangeCompleted $event): void
     {
-        $this->sender->sendContactExchange($event->lead);
+        /** @var class-string<DigitalBusinessCardLead> $leadModel */
+        $leadModel = Config::model('lead');
+        $lead = $leadModel::findOrFail($event->leadId);
+        $this->sender->sendContactExchange($lead);
     }
 }

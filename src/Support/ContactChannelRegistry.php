@@ -4,6 +4,14 @@ namespace DigitalCardKit\Laravel\Support;
 
 final class ContactChannelRegistry
 {
+    /**
+     * Schemes a contact is allowed to link to from the public card. Contact
+     * values arrive from a JSON column that a host application can write to
+     * directly, so an unrecognised channel must never become a javascript:
+     * or data: href.
+     */
+    private const SAFE_SCHEMES = ['http', 'https', 'tel', 'mailto'];
+
     /** @return array<string, string> */
     public static function options(): array
     {
@@ -32,7 +40,11 @@ final class ContactChannelRegistry
         }
 
         if (in_array($type, ['max', 'website', 'link'], true) && $value !== '' && ! preg_match('#^https?://#i', $value)) {
-            return 'https://'.$value;
+            // A value that already carries some other scheme is not a web link
+            // the card can open, so it is refused rather than turned into
+            // "https://javascript:...". The negative lookahead keeps
+            // "example.test:8080/path" out of the scheme branch.
+            return preg_match('#^[a-z][a-z0-9+.\-]*:(?!\d)#i', $value) ? '' : 'https://'.$value;
         }
 
         return $value;
@@ -43,15 +55,59 @@ final class ContactChannelRegistry
         $type = (string) ($contact['type'] ?? 'link');
         $value = trim((string) ($contact['value'] ?? ''));
 
-        return match ($type) {
+        if ($value === '') {
+            return '';
+        }
+
+        return self::safeUrl(match ($type) {
             'phone' => 'tel:'.preg_replace('/[^0-9+]/', '', $value),
             'email' => 'mailto:'.$value,
-            'whatsapp' => str_starts_with($value, 'http') ? $value : 'https://wa.me/'.preg_replace('/\D/', '', $value),
+            'whatsapp' => preg_match('#^https?://#i', $value) ? $value : 'https://wa.me/'.preg_replace('/\D/', '', $value),
             'telegram' => self::normalize('telegram', $value),
             'max', 'website', 'link' => self::normalize($type, $value),
             'address' => 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($value),
-            default => $value,
-        };
+            default => self::normalize('link', $value),
+        });
+    }
+
+    /**
+     * Group consecutive messengers so the card renders them as one row. This
+     * lives next to the channel definitions, rather than in the template, so
+     * the layout rule can be asserted directly.
+     *
+     * @param  array<int, array<string, mixed>>  $contacts
+     * @return array<int, array{type: string, items: array<int, array<string, mixed>>}>
+     */
+    public static function group(array $contacts): array
+    {
+        $groups = [];
+
+        foreach ($contacts as $contact) {
+            $isMessenger = self::isMessenger($contact);
+            $last = count($groups) - 1;
+
+            if ($isMessenger && $last >= 0 && $groups[$last]['type'] === 'social') {
+                $groups[$last]['items'][] = $contact;
+
+                continue;
+            }
+
+            $groups[] = ['type' => $isMessenger ? 'social' : 'contact', 'items' => [$contact]];
+        }
+
+        return $groups;
+    }
+
+    private static function safeUrl(string $url): string
+    {
+        // Matched on the raw string rather than with parse_url(), which reads
+        // "tel:112" as host:port and reports no scheme at all — that would
+        // discard short numbers such as emergency lines and extensions.
+        if (! preg_match('#^([a-z][a-z0-9+.\-]*):#i', $url, $matches)) {
+            return '';
+        }
+
+        return in_array(strtolower($matches[1]), self::SAFE_SCHEMES, true) ? $url : '';
     }
 
     public static function label(array $contact): string
