@@ -2,7 +2,7 @@
 language: en-US
 early_access: false
 reviews:
-  profile: followup
+  profile: assertive
   request_changes_workflow: false
   high_level_summary: true
   poem: false
@@ -47,7 +47,7 @@ reviews:
   tools:
     phpstan:
       enabled: true
-      level: 5
+      level: "5"
     php_codesniffer:
       enabled: false
     rubocop:
