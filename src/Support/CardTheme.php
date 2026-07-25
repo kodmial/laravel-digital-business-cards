@@ -2,57 +2,65 @@
 
 namespace DigitalCardKit\Laravel\Support;
 
+use Spatie\Color\Exceptions\InvalidColorValue;
+use Spatie\Color\Hex;
+use Spatie\Color\Rgb;
+
 final class CardTheme
 {
     /** @return array<string, string|bool> */
     public static function tokens(string $background, string $accent, string $text): array
     {
-        $background = self::hex($background, '#101827');
-        $accent = self::hex($accent, '#7357ff');
-        $text = self::hex($text, '#ffffff');
-        $dark = self::luminance($background) < .34;
+        $backgroundHex = self::toHex($background, '#101827');
+        $accentHex = self::toHex($accent, '#7357ff');
+        $textHex = self::toHex($text, '#ffffff');
+
+        $backgroundRgb = $backgroundHex->toRgb();
+        $dark = self::luminance($backgroundRgb) < .34;
+
+        $white = new Rgb(255, 255, 255);
+        $black = new Rgb(0, 0, 0);
+        $surfaceBase = new Rgb(243, 244, 246);
+
+        $accentRgb = $accentHex->toRgb();
 
         return [
-            'background' => $background,
-            'accent' => $accent,
-            'text' => $text,
+            'background' => (string) $backgroundHex,
+            'accent' => (string) $accentHex,
+            'text' => (string) $textHex,
             'is_dark' => $dark,
-            'surface' => self::mix($background, '#ffffff', $dark ? .09 : .72),
-            'surface_muted' => self::mix($background, $dark ? '#ffffff' : '#000000', $dark ? .15 : .035),
-            'muted_text' => self::mix($text, $background, .30),
-            'border' => self::mix($text, $background, $dark ? .18 : .14),
-            'page_background' => $dark ? self::mix($background, '#000000', .34) : self::mix($background, '#f3f4f6', .48),
+            'surface' => (string) self::mix($backgroundRgb, $white, $dark ? .09 : .72)->toHex(),
+            'surface_muted' => (string) self::mix($backgroundRgb, $dark ? $white : $black, $dark ? .15 : .035)->toHex(),
+            'muted_text' => (string) self::mix($textHex->toRgb(), $backgroundRgb, .30)->toHex(),
+            'border' => (string) self::mix($textHex->toRgb(), $backgroundRgb, $dark ? .18 : .14)->toHex(),
+            'page_background' => (string) self::mix($backgroundRgb, $dark ? $black : $surfaceBase, $dark ? .34 : .48)->toHex(),
             'shadow' => $dark ? '0 10px 24px rgba(0, 0, 0, .28)' : '0 10px 24px rgba(15, 23, 42, .10)',
-            'accent_rgb' => implode(', ', self::rgb($accent)),
+            'accent_rgb' => $accentRgb->red().', '.$accentRgb->green().', '.$accentRgb->blue(),
         ];
     }
 
-    private static function hex(string $value, string $fallback): string
+    private static function toHex(string $value, string $fallback): Hex
     {
-        $value = trim($value);
-
-        return preg_match('/^#[0-9a-f]{6}$/i', $value) ? strtolower($value) : $fallback;
+        try {
+            return Hex::fromString(strtolower(trim($value)));
+        } catch (InvalidColorValue) {
+            return Hex::fromString($fallback);
+        }
     }
 
-    /** @return array{int, int, int} */
-    private static function rgb(string $hex): array
+    private static function luminance(Rgb $rgb): float
     {
-        return [hexdec(substr($hex, 1, 2)), hexdec(substr($hex, 3, 2)), hexdec(substr($hex, 5, 2))];
+        return (.2126 * $rgb->red() + .7152 * $rgb->green() + .0722 * $rgb->blue()) / 255;
     }
 
-    private static function luminance(string $hex): float
+    private static function mix(Rgb $from, Rgb $to, float $amount): Rgb
     {
-        [$red, $green, $blue] = self::rgb($hex);
-
-        return (.2126 * $red + .7152 * $green + .0722 * $blue) / 255;
-    }
-
-    private static function mix(string $from, string $to, float $amount): string
-    {
-        [$fromRed, $fromGreen, $fromBlue] = self::rgb($from);
-        [$toRed, $toGreen, $toBlue] = self::rgb($to);
         $mix = static fn (int $start, int $end): int => (int) round($start + (($end - $start) * $amount));
 
-        return sprintf('#%02x%02x%02x', $mix($fromRed, $toRed), $mix($fromGreen, $toGreen), $mix($fromBlue, $toBlue));
+        return new Rgb(
+            $mix($from->red(), $to->red()),
+            $mix($from->green(), $to->green()),
+            $mix($from->blue(), $to->blue()),
+        );
     }
 }

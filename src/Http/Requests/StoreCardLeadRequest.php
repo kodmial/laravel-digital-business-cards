@@ -6,38 +6,73 @@ use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use libphonenumber\PhoneNumberUtil;
 
 class StoreCardLeadRequest extends FormRequest
 {
     use ResolvesPublicCard;
 
-    /** Columns the lead table stores directly; everything else is custom data. */
     private const NATIVE_KEYS = ['name', 'phone', 'email', 'company', 'comment'];
 
     public function card(): DigitalBusinessCard
     {
         $card = $this->resolvedCard ??= $this->resolvePublishedCard((string) $this->route('card'));
 
-        // A card with the exchange form switched off has to look exactly like
-        // a card that does not exist.
         abort_unless($card->lead_form_enabled, 404);
 
         return $card;
     }
 
-    /** @return array<string, array<int, string>> */
+    /** @return array<string, array<int, string|\Closure>> */
     public function rules(): array
     {
         $card = $this->card();
         $rules = [];
+        $phoneUtil = PhoneNumberUtil::getInstance();
 
         foreach ($card->validatableLeadFields() as $field) {
-            $rules[(string) $field['key']] = array_filter([
+            $fieldType = $field['type'] ?? 'text';
+            $fieldRules = [
                 ($field['required'] ?? false) ? 'required' : 'nullable',
                 'string',
                 'max:2000',
-                ($field['type'] ?? 'text') === 'email' ? 'email:rfc' : null,
-            ]);
+            ];
+
+            if ($fieldType === 'email') {
+                $fieldRules[] = 'email:rfc';
+            }
+
+            if ($fieldType === 'tel') {
+                $fieldRules[] = static function (string $attribute, mixed $value, \Closure $fail) use ($phoneUtil): void {
+                    if (! is_string($value) || $value === '') {
+                        return;
+                    }
+
+                    $candidates = ['RU', 'KZ', 'BY', 'UA', 'US', null];
+                    foreach ($candidates as $region) {
+                        try {
+                            $proto = $phoneUtil->parse($value, $region);
+                            if ($phoneUtil->isValidNumber($proto)) {
+                                return;
+                            }
+                        } catch (\Throwable) {
+                            continue;
+                        }
+                    }
+
+                    try {
+                        $proto = $phoneUtil->parse($value, null);
+                        if ($phoneUtil->isPossibleNumber($proto)) {
+                            return;
+                        }
+                    } catch (\Throwable) {
+                    }
+
+                    $fail(__('validation.phone', ['attribute' => $attribute]));
+                };
+            }
+
+            $rules[(string) $field['key']] = $fieldRules;
         }
 
         $rules['consent'] = $card->lead_consent_required
@@ -48,9 +83,6 @@ class StoreCardLeadRequest extends FormRequest
     }
 
     /**
-     * The submission mapped onto the lead columns. Keys the card does not
-     * declare natively are preserved under custom_data.
-     *
      * @return array<string, mixed>
      */
     public function leadAttributes(): array
