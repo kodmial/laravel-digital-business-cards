@@ -21,6 +21,9 @@ jobs:
           php-version: '8.4'
           coverage: none
 
+      - name: Validate Composer metadata
+        run: composer validate --strict --no-check-publish
+
       - name: Install dependencies
         run: composer update --prefer-dist --no-interaction --no-progress
 
