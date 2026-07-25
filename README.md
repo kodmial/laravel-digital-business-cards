@@ -222,6 +222,18 @@ Set custom model classes under `models` in the published configuration. Custom
 card, block, lead, and event classes should extend the corresponding package
 models so relationships and route behavior remain compatible.
 
+## AI Code Review
+
+[CodeRabbit](https://coderabbit.com) is configured on this repository with an
+**assertive** review profile. It runs PHPStan (level 5) and ESLint, and applies
+path-specific instructions for `src/`, `tests/`, `routes/`, `resources/views/`,
+and `resources/lang/`.
+
+Commits on the `main` branch are reviewed automatically. You can also trigger
+a review by posting `@coderabbitai review` in any pull request comment.
+
+See [`.coderabbit.yaml`](.coderabbit.yaml) for the full configuration.
+
 ## Development
 
 The package has an autonomous Testbench suite:
