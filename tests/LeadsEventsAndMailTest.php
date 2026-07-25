@@ -2,12 +2,12 @@
 
 namespace DigitalCardKit\Laravel\Tests;
 
-use DigitalCardKit\Laravel\Models\DigitalBusinessCardBlock;
 use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
 use DigitalCardKit\Laravel\Listeners\QueueContactExchangeNotifications;
 use DigitalCardKit\Laravel\Listeners\SendContactExchangeNotifications;
 use DigitalCardKit\Laravel\Mail\ContactExchangeConfirmation;
 use DigitalCardKit\Laravel\Mail\ContactExchangeReceived;
+use DigitalCardKit\Laravel\Models\DigitalBusinessCardBlock;
 use DigitalCardKit\Laravel\Notifications\LaravelMailNotificationSender;
 use DigitalCardKit\Laravel\Notifications\NotificationSender;
 use DigitalCardKit\Laravel\Tests\Concerns\CreatesCards;
