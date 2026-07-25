@@ -78,7 +78,7 @@ class LeadsEventsAndMailTest extends TestCase
         $card = $this->createCard();
         $other = $this->createCard(['slug' => 'other-card']);
         $foreign = DigitalBusinessCardBlock::factory()->for($other, 'card')->create();
-        $disabled = DigitalBusinessCardBlock::factory()->for($card, 'card')->disabled()->create();
+        $disabled = DigitalBusinessCardBlock::factory()->for($card, 'card')->create(['is_enabled' => false]);
 
         $this->postJson('/card/example-card/events', ['type' => 'cta', 'block_id' => $foreign->id])
             ->assertStatus(422)
