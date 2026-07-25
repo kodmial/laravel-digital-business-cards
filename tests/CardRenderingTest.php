@@ -49,11 +49,11 @@ class CardRenderingTest extends TestCase
         $this->get('/card/example-card')
             ->assertOk()
             ->assertSee('Minimal')
-            ->assertSee('Сохранить в контакты')
+            ->assertSee('Save to contacts')
             ->assertSee('data-modal="save"', false)
             ->assertDontSee('digital-card-company-section', false)
-            ->assertDontSee('О компании')
-            ->assertDontSee('Обо мне');
+            ->assertDontSee('About the company')
+            ->assertDontSee('About me');
     }
 
     public function test_about_content_is_escaped(): void
@@ -72,7 +72,7 @@ class CardRenderingTest extends TestCase
         $this->createCard(['slug' => 'person-about']);
         $this->get('/card/person-about')
             ->assertOk()
-            ->assertSee('<h2>Обо мне</h2>', false);
+            ->assertSee('<h2>About me</h2>', false);
 
         $this->createCard([
             'slug' => 'company-about',
@@ -83,8 +83,8 @@ class CardRenderingTest extends TestCase
         ]);
         $this->get('/card/company-about')
             ->assertOk()
-            ->assertSee('<h2>О компании</h2>', false)
-            ->assertDontSee('<h2>Обо мне</h2>', false);
+            ->assertSee('<h2>About the company</h2>', false)
+            ->assertDontSee('<h2>About me</h2>', false);
     }
 
     public function test_all_font_and_button_variants_render_their_classes(): void
@@ -142,7 +142,7 @@ class CardRenderingTest extends TestCase
             ->assertSee('Selected work')
             ->assertSee('cards/galleries/one.jpg', false)
             ->assertSee('Product overview')
-            ->assertSee('Смотреть видео')
+            ->assertSee('Watch video')
             ->assertSee('https://files.example.test/resume.pdf', false)
             ->assertSee('PDF document')
             ->assertSee('cards/content/banner.jpg', false)
@@ -163,5 +163,53 @@ class CardRenderingTest extends TestCase
             ->assertOk()
             ->assertSee('Title fallback')
             ->assertSee('Label fallback');
+    }
+
+    public function test_the_public_card_follows_the_application_locale(): void
+    {
+        $this->createCard(['about' => 'Independent practice.']);
+
+        $this->get('/card/example-card')
+            ->assertOk()
+            ->assertSee('<html lang="en">', false)
+            ->assertSee('Save to contacts')
+            ->assertSee('<h2>About me</h2>', false)
+            ->assertSee('Digital business card');
+
+        $this->app->setLocale('ru');
+
+        $this->get('/card/example-card')
+            ->assertOk()
+            ->assertSee('<html lang="ru">', false)
+            ->assertSee('Сохранить в контакты')
+            ->assertSee('<h2>Обо мне</h2>', false)
+            ->assertSee('Электронная визитка')
+            ->assertDontSee('Save to contacts');
+    }
+
+    public function test_the_lead_form_and_success_dialog_follow_the_application_locale(): void
+    {
+        $this->createCard(['lead_form_title' => '', 'lead_form_description' => null]);
+        $this->app->setLocale('ru');
+
+        $this->withSession(['card_lead_sent' => true])
+            ->get('/card/example-card')
+            ->assertOk()
+            ->assertSee('Оставьте свои контакты для связи')
+            ->assertSee('Согласен(на) на обработку персональных данных')
+            ->assertSee('Поделиться контактом')
+            ->assertSee('Ваши контакты успешно отправлены')
+            ->assertSee('получил(а) ваши контактные данные', false);
+    }
+
+    public function test_an_unknown_locale_falls_back_without_leaking_translation_keys(): void
+    {
+        $this->createCard();
+        $this->app->setLocale('de');
+
+        $html = $this->get('/card/example-card')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('digital-business-cards::messages', $html);
+        $this->assertStringContainsString('Save to contacts', $html);
     }
 }

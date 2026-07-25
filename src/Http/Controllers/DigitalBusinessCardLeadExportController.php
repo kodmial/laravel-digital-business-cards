@@ -2,34 +2,45 @@
 
 namespace DigitalCardKit\Laravel\Http\Controllers;
 
+use DigitalCardKit\Laravel\Http\Requests\ExportLeadsRequest;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
-use Illuminate\Http\Request;
+use DigitalCardKit\Laravel\Support\Config;
 use Illuminate\Routing\Controller;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DigitalBusinessCardLeadExportController extends Controller
 {
-    public function __invoke(Request $request): StreamedResponse
+    public function __invoke(ExportLeadsRequest $request): StreamedResponse
     {
-        $leadModel = config('digital-business-cards.models.lead', DigitalBusinessCardLead::class);
-        $query = $leadModel::query()->with('card:id,first_name,middle_name,last_name');
+        $filters = $request->filters();
+        $query = Config::model('lead')::query()->with('card:id,first_name,middle_name,last_name');
 
-        if ($cardId = $request->integer('card_id')) {
-            $query->where('digital_business_card_id', $cardId);
+        if (isset($filters['card_id'])) {
+            $query->where('digital_business_card_id', $filters['card_id']);
         }
 
-        if ($dateFrom = $request->input('date_from')) {
-            $query->where('submitted_at', '>=', $dateFrom);
+        if (isset($filters['date_from'])) {
+            $query->where('submitted_at', '>=', $filters['date_from']);
         }
 
-        if ($dateTo = $request->input('date_to')) {
-            $query->where('submitted_at', '<=', $dateTo.' 23:59:59');
+        if (isset($filters['date_to'])) {
+            $query->where('submitted_at', '<=', $filters['date_to']);
         }
 
         return response()->streamDownload(function () use ($query): void {
             $output = fopen('php://output', 'wb');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, ['Визитка', 'Имя', 'Телефон', 'Email', 'Компания', 'Комментарий', 'Дополнительные поля', 'Согласие', 'Дата'], ';');
+            fputcsv($output, [
+                __('digital-business-cards::messages.export.card'),
+                __('digital-business-cards::messages.export.name'),
+                __('digital-business-cards::messages.export.phone'),
+                __('digital-business-cards::messages.export.email'),
+                __('digital-business-cards::messages.export.company'),
+                __('digital-business-cards::messages.export.comment'),
+                __('digital-business-cards::messages.export.custom_fields'),
+                __('digital-business-cards::messages.export.consent'),
+                __('digital-business-cards::messages.export.date'),
+            ], ';');
 
             $query->orderByDesc('submitted_at')
                 ->each(function (DigitalBusinessCardLead $lead) use ($output): void {
@@ -43,7 +54,7 @@ class DigitalBusinessCardLeadExportController extends Controller
                         collect($lead->custom_data ?: [])->map(
                             fn ($value, $key) => $key.': '.(is_scalar($value) || $value === null ? $value : json_encode($value, JSON_UNESCAPED_UNICODE))
                         )->implode("\n"),
-                        $lead->consent_given ? 'Да' : 'Нет',
+                        __('digital-business-cards::messages.export.'.($lead->consent_given ? 'yes' : 'no')),
                         $lead->submitted_at?->format('d.m.Y H:i'),
                     ]), ';');
                 });

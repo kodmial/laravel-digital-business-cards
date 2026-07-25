@@ -2,11 +2,16 @@
 
 namespace DigitalCardKit\Laravel\Models;
 
+use DigitalCardKit\Laravel\Database\Factories\DigitalBusinessCardLeadFactory;
+use DigitalCardKit\Laravel\Support\Config;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DigitalBusinessCardLead extends Model
 {
+    use HasFactory;
+
     protected $table = 'digital_business_card_leads';
 
     protected $fillable = ['name', 'phone', 'email', 'company', 'comment', 'custom_data', 'consent_given', 'source', 'submitted_at'];
@@ -18,6 +23,11 @@ class DigitalBusinessCardLead extends Model
 
     public function card(): BelongsTo
     {
-        return $this->belongsTo(config('digital-business-cards.models.card'), 'digital_business_card_id');
+        return $this->belongsTo(Config::model('card'), 'digital_business_card_id');
+    }
+
+    protected static function newFactory(): DigitalBusinessCardLeadFactory
+    {
+        return DigitalBusinessCardLeadFactory::new();
     }
 }

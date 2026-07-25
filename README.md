@@ -78,7 +78,8 @@ Important settings in `config/digital-business-cards.php`:
 | --- | --- |
 | `route_prefix` and `route_name_prefix` | Public URL and route-name prefixes |
 | `route_middleware` | Middleware for public card routes |
-| `lead_middleware` and `event_middleware` | Rate limits for write endpoints |
+| `lead_middleware` and `event_middleware` | Middleware for the write endpoints |
+| `rate_limits` | Attempts per minute, per card and per client address |
 | `storage_disk` and `media_directories` | Local, S3, or CDN-backed media storage |
 | `privacy_url` | Optional global privacy-policy URL used by consent forms |
 | `default_theme` | Neutral default background, accent, and text colors |
@@ -86,7 +87,7 @@ Important settings in `config/digital-business-cards.php`:
 | `notification_sender` | Replaceable contact notification implementation |
 | `notifications` | Default listener, queue connection, and queue name |
 | `mail` | Mailer, subjects, and overridable email views |
-| `lead_export` | Export path, route name, and authorization middleware |
+| `lead_export` | Export path, route name, middleware, and authorization ability |
 
 Cards are drafts by default. Publish a card explicitly after its content,
 privacy URL, recipients, and appearance have been reviewed. A card-specific
@@ -166,6 +167,55 @@ worker running:
 php artisan queue:work
 ```
 
+## Lead export authorization
+
+The export streams every stored contact, so it is gated in addition to its route
+middleware. The package registers a default ability that requires an
+authenticated user. Define the ability yourself to apply your own rules, and the
+packaged default steps aside:
+
+```php
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('digital-business-cards.export-leads', fn ($user) => $user->isAdmin());
+```
+
+Point `lead_export.ability` at a different name to reuse an existing ability.
+
+`Gate` resolves the user from the default auth guard, so the packaged default
+also accepts a user authenticated on a Filament panel's own guard. An ability you
+define yourself is responsible for whichever guard your panel uses.
+
+## Rate limits
+
+Lead and event submissions use named limiters registered by the package. Each is
+keyed by card and client address, with a wider per-address cap so spreading
+requests across many cards does not lift the ceiling. Tune the numbers under
+`rate_limits`, or replace `lead_middleware` and `event_middleware` outright.
+
+## Localization
+
+Public pages, contact exchange emails, CSV export headers, and the Filament
+resources follow the application locale. English and Russian are bundled; publish
+the translations to add a language or reword the defaults:
+
+```bash
+php artisan vendor:publish --tag=digital-business-cards-translations
+```
+
+## Factories
+
+The package ships factories for host applications and its own tests:
+
+```php
+use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
+
+DigitalBusinessCard::factory()->published()->create();
+DigitalBusinessCard::factory()->withoutLeadForm()->count(3)->create();
+```
+
+They resolve the configured model classes, so a custom subclass is honored.
+
 ## Extending models
 
 Set custom model classes under `models` in the published configuration. Custom
@@ -226,9 +276,12 @@ Released migrations are not rewritten during upgrades.
 
 ## Security notes
 
-- Public write routes are rate-limited by default.
+- Public write routes are rate-limited per card and per client address.
 - Unpublished cards return `404`.
+- The lead export requires the configured authorization ability.
+- Contact links are limited to the `http`, `https`, `tel` and `mailto` schemes.
 - Lead source referers are length-bounded.
+- Visitors are pseudonymized with an HMAC keyed by the application key.
 - CSV exports neutralize spreadsheet formulas.
 - Replaced and deleted managed media is removed from the configured disk.
 

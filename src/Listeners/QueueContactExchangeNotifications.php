@@ -2,6 +2,7 @@
 
 namespace DigitalCardKit\Laravel\Listeners;
 
+use DigitalCardKit\Laravel\Support\Config;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class QueueContactExchangeNotifications extends SendContactExchangeNotifications implements ShouldQueue
@@ -10,11 +11,11 @@ class QueueContactExchangeNotifications extends SendContactExchangeNotifications
 
     public function viaConnection(): ?string
     {
-        return config('digital-business-cards.notifications.queue_connection');
+        return Config::get('notifications.queue_connection');
     }
 
     public function viaQueue(): ?string
     {
-        return config('digital-business-cards.notifications.queue_name');
+        return Config::get('notifications.queue_name');
     }
 }

@@ -6,8 +6,9 @@ use DigitalCardKit\Laravel\DigitalBusinessCardsPlugin;
 use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCardLeads\DigitalBusinessCardLeadResource;
 use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\DigitalBusinessCardResource;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
-use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
 use DigitalCardKit\Laravel\Support\ContactChannelRegistry;
+use DigitalCardKit\Laravel\Tests\Fixtures\CustomDigitalBusinessCard;
+use DigitalCardKit\Laravel\Tests\Fixtures\CustomDigitalBusinessCardLead;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -243,12 +244,8 @@ class PackageTest extends TestCase
 
         $this->get('/card/plain-consent')
             ->assertOk()
-            ->assertSee('Согласен(на) на обработку персональных данных')
+            ->assertSee('I consent to the processing of my personal data')
             ->assertDontSee('согласно <a href=', false)
             ->assertDontSee('href="/"', false);
     }
 }
-
-class CustomDigitalBusinessCard extends DigitalBusinessCard {}
-
-class CustomDigitalBusinessCardLead extends DigitalBusinessCardLead {}

@@ -5,6 +5,7 @@ namespace DigitalCardKit\Laravel\Notifications;
 use DigitalCardKit\Laravel\Mail\ContactExchangeConfirmation;
 use DigitalCardKit\Laravel\Mail\ContactExchangeReceived;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
+use DigitalCardKit\Laravel\Support\Config;
 use Illuminate\Mail\PendingMail;
 use Illuminate\Support\Facades\Mail;
 
@@ -34,7 +35,7 @@ class LaravelMailNotificationSender implements NotificationSender
 
     private function mailTo(array|string $recipients): PendingMail
     {
-        $mailer = config('digital-business-cards.mail.mailer');
+        $mailer = Config::get('mail.mailer');
 
         return $mailer ? Mail::mailer($mailer)->to($recipients) : Mail::to($recipients);
     }

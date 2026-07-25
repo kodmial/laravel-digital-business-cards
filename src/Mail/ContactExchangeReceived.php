@@ -3,6 +3,7 @@
 namespace DigitalCardKit\Laravel\Mail;
 
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
+use DigitalCardKit\Laravel\Support\Config;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -17,14 +18,11 @@ class ContactExchangeReceived extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: config('digital-business-cards.mail.owner_subject'));
+        return new Envelope(subject: Config::mailSubject('owner'));
     }
 
     public function content(): Content
     {
-        return new Content(view: config(
-            'digital-business-cards.mail.owner_view',
-            'digital-business-cards::emails.contact-exchange-received',
-        ));
+        return new Content(view: Config::mailView('owner'));
     }
 }

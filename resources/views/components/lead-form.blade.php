@@ -7,17 +7,20 @@
 
 
 @php
-    $title = $card->lead_form_title ?: 'Оставьте свои контакты для связи';
-    $description = $card->lead_form_description ?: "Оставьте контакты, чтобы {$fullName} мог(ла) связаться с вами.";
+    use DigitalCardKit\Laravel\Support\Config;
+
+    $title = $card->lead_form_title ?: __('digital-business-cards::messages.lead.title');
+    $description = $card->lead_form_description
+        ?: __('digital-business-cards::messages.lead.description', ['name' => $fullName]);
     $headingId = $inline ? 'inline-lead-title' : 'exchange-title';
-    $privacyUrl = trim((string) ($card->privacy_url ?: config('digital-business-cards.privacy_url')));
+    $privacyUrl = trim((string) $card->privacy_url) ?: Config::privacyUrl();
 @endphp
 
 <h2 id="{{ $headingId }}">{{ $title }}</h2>
 <p class="digital-card-exchange-copy">{{ $description }}</p>
-<form action="{{ route(config('digital-business-cards.route_name_prefix', 'cards.').'leads.store', $card) }}" method="post" class="digital-card-form" @if($inline) data-inline-lead-form @endif>
+<form action="{{ route(Config::routeName('leads.store'), $card) }}" method="post" class="digital-card-form" @if($inline) data-inline-lead-form @endif>
     @csrf
-    @foreach ($card->leadFields() as $field)
+    @foreach ($card->validatableLeadFields() as $field)
         @php($key = $field['key'])
         <label>
             <span>{{ $field['label'] }} @if($field['required'] ?? false)<b>*</b>@endif</span>
@@ -32,12 +35,15 @@
     <label class="digital-card-consent">
         <input type="checkbox" name="consent" value="1" @checked(old('consent')) @required($card->lead_consent_required)>
         <span>
-            Согласен(на) на обработку персональных данных
+            {{ __('digital-business-cards::messages.lead.consent') }}
             @if($privacyUrl !== '')
-                согласно <a href="{{ $privacyUrl }}" target="_blank" rel="noopener">политике конфиденциальности</a>
+                {!! __('digital-business-cards::messages.lead.consent_policy', [
+                    'link' => '<a href="'.e($privacyUrl).'" target="_blank" rel="noopener">'
+                        .e(__('digital-business-cards::messages.lead.privacy_policy')).'</a>',
+                ]) !!}
             @endif
         </span>
     </label>
     @error('consent')<em>{{ $message }}</em>@enderror
-    <button type="submit" class="digital-card-submit {{ $buttonClass }}">Поделиться контактом</button>
+    <button type="submit" class="digital-card-submit {{ $buttonClass }}">{{ __('digital-business-cards::messages.actions.submit_lead') }}</button>
 </form>

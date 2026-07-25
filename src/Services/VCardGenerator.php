@@ -3,6 +3,7 @@
 namespace DigitalCardKit\Laravel\Services;
 
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
+use DigitalCardKit\Laravel\Support\Config;
 use Illuminate\Support\Facades\Storage;
 use Sabre\VObject\Component\VCard;
 
@@ -33,7 +34,7 @@ class VCardGenerator
         }
 
         if ($card->avatar) {
-            $vcard->add('PHOTO', Storage::disk(config('digital-business-cards.storage_disk', 'public'))->url($card->avatar), ['VALUE' => 'uri']);
+            $vcard->add('PHOTO', Storage::disk(Config::disk())->url($card->avatar), ['VALUE' => 'uri']);
         }
 
         return $vcard->serialize();

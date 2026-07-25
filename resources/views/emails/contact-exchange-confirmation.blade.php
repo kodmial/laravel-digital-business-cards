@@ -17,7 +17,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $card->lead_confirmation_subject ?: config('digital-business-cards.mail.confirmation_subject') }}</title>
+    <title>{{ $card->lead_confirmation_subject ?: \DigitalCardKit\Laravel\Support\Config::mailSubject('confirmation') }}</title>
 </head>
 <body style="margin:0;padding:0;background:{{ $theme['page_background'] }};color:{{ $theme['text'] }};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;background:{{ $theme['page_background'] }};">

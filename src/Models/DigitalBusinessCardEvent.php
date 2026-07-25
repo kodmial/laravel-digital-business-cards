@@ -2,11 +2,16 @@
 
 namespace DigitalCardKit\Laravel\Models;
 
+use DigitalCardKit\Laravel\Database\Factories\DigitalBusinessCardEventFactory;
+use DigitalCardKit\Laravel\Support\Config;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DigitalBusinessCardEvent extends Model
 {
+    use HasFactory;
+
     protected $table = 'digital_business_card_events';
 
     public $timestamps = false;
@@ -20,11 +25,16 @@ class DigitalBusinessCardEvent extends Model
 
     public function card(): BelongsTo
     {
-        return $this->belongsTo(config('digital-business-cards.models.card'), 'digital_business_card_id');
+        return $this->belongsTo(Config::model('card'), 'digital_business_card_id');
     }
 
     public function block(): BelongsTo
     {
-        return $this->belongsTo(config('digital-business-cards.models.block'), 'digital_business_card_block_id');
+        return $this->belongsTo(Config::model('block'), 'digital_business_card_block_id');
+    }
+
+    protected static function newFactory(): DigitalBusinessCardEventFactory
+    {
+        return DigitalBusinessCardEventFactory::new();
     }
 }
