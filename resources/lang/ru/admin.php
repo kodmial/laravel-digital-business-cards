@@ -87,7 +87,7 @@ return [
             'updated_at' => 'Изменена',
         ],
         'hints' => [
-            'telegram' => 'Username: @username, username или ссылка t.me/username.',
+            'telegram' => 'Имя пользователя: @username, username или ссылка t.me/username.',
             'max' => 'Вставьте полную ссылку на профиль MAX (https://max.ru/...).',
             'phone' => 'Российский номер отобразится в привычном формате; исходное значение останется в ссылке и VCF.',
             'website' => 'На визитке будет показан только домен без длинного пути, а полная ссылка сохранится для перехода.',
@@ -126,7 +126,7 @@ return [
             'field_tel' => 'Телефон',
             'field_email' => 'Email',
             'field_textarea' => 'Многострочный текст',
-            'preset_dark' => 'Тёмная (indigo)',
+            'preset_dark' => 'Тёмная (индиго)',
             'preset_dark_blue' => 'Тёмная (синяя)',
             'preset_dark_green' => 'Тёмная (зелёная)',
             'preset_light' => 'Светлая (фиолетовая)',

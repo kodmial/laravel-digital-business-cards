@@ -112,7 +112,13 @@ final class Config
 
     public static function mailSubject(string $key): string
     {
-        return (string) self::get('mail.'.$key.'_subject', '');
+        $configured = (string) self::get('mail.'.$key.'_subject', '');
+
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        return __('digital-business-cards::messages.mail.'.$key.'_subject');
     }
 
     public static function mailView(string $key): string

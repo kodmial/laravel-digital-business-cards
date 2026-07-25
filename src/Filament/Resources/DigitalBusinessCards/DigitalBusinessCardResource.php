@@ -360,7 +360,7 @@ class DigitalBusinessCardResource extends Resource
                 ->schema([
                     Repeater::make('lead_form_fields')
                         ->label('')
-                        ->default(fn () => (new DigitalBusinessCard)->leadFields())
+                        ->default(fn () => app(Config::cardModel())->leadFields())
                         ->addActionLabel(self::translate('actions.add_field'))
                         ->schema([
                             TextInput::make('key')

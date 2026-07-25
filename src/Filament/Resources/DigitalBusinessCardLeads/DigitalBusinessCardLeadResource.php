@@ -89,6 +89,7 @@ class DigitalBusinessCardLeadResource extends Resource
                     ->label(self::translate('fields.card'))
                     ->options(fn (): array => Config::model('card')::query()
                         ->orderBy('first_name')
+                        ->select('id', 'first_name', 'middle_name', 'last_name', 'company_name')
                         ->get()
                         ->mapWithKeys(fn (DigitalBusinessCard $card) => [$card->id => $card->full_name])
                         ->all()),

@@ -1,15 +1,15 @@
 @php
     $card = $lead->card;
     $theme = $card->themeTokens();
-    $cardName = $card->full_name ?: $card->company_name ?: 'Digital business card';
-    $recipientName = $lead->name ?: 'there';
+    $cardName = $card->full_name ?: $card->company_name ?: __('digital-business-cards::messages.card.fallback_title');
+    $recipientName = $lead->name ?: '';
     $logoUrl = $card->storageUrl($card->logo);
     $details = array_filter([
-        'Name' => $lead->name,
-        'Phone' => $lead->phone,
-        'Email' => $lead->email,
-        'Company' => $lead->company,
-        'Comment' => $lead->comment,
+        __('digital-business-cards::messages.mail.field_name') => $lead->name,
+        __('digital-business-cards::messages.mail.field_phone') => $lead->phone,
+        __('digital-business-cards::messages.mail.field_email') => $lead->email,
+        __('digital-business-cards::messages.mail.field_company') => $lead->company,
+        __('digital-business-cards::messages.mail.field_comment') => $lead->comment,
     ], static fn ($value) => filled($value));
 @endphp
 <!doctype html>
@@ -32,18 +32,18 @@
         </td></tr>
         <tr><td style="padding:0 40px;"><div style="height:1px;background:{{ $theme['border'] }};"></div></td></tr>
         <tr><td style="padding:34px 40px 40px;">
-            <h1 style="margin:0 0 24px;font-size:22px;line-height:1.35;color:{{ $theme['text'] }};">Hello, {{ $recipientName }}</h1>
+            <h1 style="margin:0 0 24px;font-size:22px;line-height:1.35;color:{{ $theme['text'] }};">{{ $recipientName ? __('digital-business-cards::messages.mail.greeting', ['name' => $recipientName]) : __('digital-business-cards::messages.mail.greeting_fallback') }}</h1>
             <p style="margin:0 0 20px;font-size:16px;line-height:1.55;color:{{ $theme['text'] }};">
-                Your contact details were successfully shared with {{ $cardName }}.
+                {{ __('digital-business-cards::messages.mail.confirmation_success', ['card' => $cardName]) }}
             </p>
             @if($details !== [])
-                <p style="margin:0 0 14px;font-size:16px;line-height:1.55;color:{{ $theme['text'] }};">Details you shared:</p>
+                <p style="margin:0 0 14px;font-size:16px;line-height:1.55;color:{{ $theme['text'] }};">{{ __('digital-business-cards::messages.mail.details_shared') }}</p>
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;margin:0 0 24px;">
                     @foreach($details as $label => $value)
                         <tr>
                             <td style="padding:4px 12px 4px 0;width:90px;vertical-align:top;font-size:15px;line-height:1.45;color:{{ $theme['muted_text'] }};"><strong>{{ $label }}:</strong></td>
                             <td style="padding:4px 0;vertical-align:top;font-size:15px;line-height:1.45;color:{{ $theme['text'] }};word-break:break-word;">
-                                @if($label === 'Email')
+                                @if($label === __('digital-business-cards::messages.mail.field_email'))
                                     <a href="mailto:{{ $value }}" style="color:{{ $theme['accent'] }};">{{ $value }}</a>
                                 @else
                                     {{ $value }}
@@ -54,13 +54,13 @@
                 </table>
             @endif
             <p style="margin:0;font-size:16px;line-height:1.55;color:{{ $theme['text'] }};">
-                Keep the card close at hand:
+                {{ __('digital-business-cards::messages.mail.keep_card') }}
                 <a href="{{ $card->publicUrl() }}" style="color:{{ $theme['accent'] }};font-weight:600;">{{ $cardName }}</a>
             </p>
         </td></tr>
         <tr><td style="padding:0 40px;"><div style="height:1px;background:{{ $theme['border'] }};"></div></td></tr>
         <tr><td align="center" style="padding:22px 40px;color:{{ $theme['muted_text'] }};font-size:12px;line-height:1.5;">
-            This message confirms a contact exchange you initiated.
+            {{ __('digital-business-cards::messages.mail.confirmation_footer') }}
         </td></tr>
     </table>
 </td></tr>

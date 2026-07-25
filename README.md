@@ -191,7 +191,10 @@ define yourself is responsible for whichever guard your panel uses.
 Lead and event submissions use named limiters registered by the package. Each is
 keyed by card and client address, with a wider per-address cap so spreading
 requests across many cards does not lift the ceiling. Tune the numbers under
-`rate_limits`, or replace `lead_middleware` and `event_middleware` outright.
+`rate_limits`. Custom middleware added through `lead_middleware` and
+`event_middleware` is additive and must not replace the configured throttle
+middleware—the named `Support\RateLimits` limiters keyed by card and client
+address are required for security.
 
 ## Localization
 

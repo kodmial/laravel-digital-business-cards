@@ -4,6 +4,7 @@ namespace DigitalCardKit\Laravel\Services;
 
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 
 class EventRecorder
@@ -38,10 +39,6 @@ class EventRecorder
 
     private function applicationKey(): string
     {
-        $key = (string) config('app.key');
-
-        return str_starts_with($key, 'base64:')
-            ? (string) base64_decode(substr($key, 7), true)
-            : $key;
+        return Crypt::getKey();
     }
 }

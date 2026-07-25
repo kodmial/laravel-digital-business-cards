@@ -51,7 +51,7 @@ class DigitalBusinessCardController extends Controller
         $lead = $card->leads()->create($request->leadAttributes());
 
         $this->events->record($request, $card, 'lead');
-        ContactExchangeCompleted::dispatch($lead);
+        ContactExchangeCompleted::dispatch($lead->getKey());
 
         return redirect()
             ->route(Config::routeName('show'), $card)

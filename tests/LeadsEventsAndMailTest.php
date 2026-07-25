@@ -223,11 +223,10 @@ class LeadsEventsAndMailTest extends TestCase
         $sender->shouldReceive('sendContactExchange')->once()
             ->with(\Mockery::on(fn ($actual): bool => $actual->is($lead)));
 
-        $event = new ContactExchangeCompleted($lead);
+        $event = new ContactExchangeCompleted($lead->getKey());
         (new SendContactExchangeNotifications($sender))->handle($event);
 
         $this->assertInstanceOf(ShouldDispatchAfterCommit::class, $event);
-        $this->assertFalse($event->lead->relationLoaded('card'));
     }
 
     public function test_queued_listener_uses_configured_connection_and_queue(): void
