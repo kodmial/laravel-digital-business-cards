@@ -290,17 +290,17 @@ class DigitalBusinessCardResource extends Resource
                     ColorPicker::make('background_color')
                         ->label(self::translate('fields.background_color'))
                         ->live()
-                        ->default('#101827')
+                        ->default(fn (): string => Config::defaultThemeColor('background'))
                         ->visible(fn ($get): bool => $get('theme_mode') === 'custom'),
                     ColorPicker::make('accent_color')
                         ->label(self::translate('fields.accent_color'))
                         ->live()
-                        ->default('#7357ff')
+                        ->default(fn (): string => Config::defaultThemeColor('accent'))
                         ->visible(fn ($get): bool => $get('theme_mode') === 'custom'),
                     ColorPicker::make('text_color')
                         ->label(self::translate('fields.text_color'))
                         ->live()
-                        ->default('#ffffff')
+                        ->default(fn (): string => Config::defaultThemeColor('text'))
                         ->visible(fn ($get): bool => $get('theme_mode') === 'custom'),
                     Select::make('button_style')
                         ->label(self::translate('fields.button_style'))
@@ -316,9 +316,9 @@ class DigitalBusinessCardResource extends Resource
                         ->view('digital-business-cards::filament.components.theme-preview')
                         ->visible(fn ($get): bool => $get('background_color') !== null)
                         ->viewData(fn ($get): array => [
-                            'bg' => $get('background_color') ?: '#101827',
-                            'accent' => $get('accent_color') ?: '#7357ff',
-                            'text' => $get('text_color') ?: '#ffffff',
+                            'bg' => $get('background_color') ?: Config::defaultThemeColor('background'),
+                            'accent' => $get('accent_color') ?: Config::defaultThemeColor('accent'),
+                            'text' => $get('text_color') ?: Config::defaultThemeColor('text'),
                         ]),
                 ]),
             Section::make(self::translate('sections.seo'))

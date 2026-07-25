@@ -2,6 +2,7 @@
 
 namespace DigitalCardKit\Laravel\Tests;
 
+use DigitalCardKit\Laravel\Models\DigitalBusinessCardBlock;
 use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
 use DigitalCardKit\Laravel\Listeners\QueueContactExchangeNotifications;
 use DigitalCardKit\Laravel\Listeners\SendContactExchangeNotifications;
@@ -76,8 +77,8 @@ class LeadsEventsAndMailTest extends TestCase
     {
         $card = $this->createCard();
         $other = $this->createCard(['slug' => 'other-card']);
-        $foreign = $other->blocks()->create(['type' => 'link', 'is_enabled' => true]);
-        $disabled = $card->blocks()->create(['type' => 'link', 'is_enabled' => false]);
+        $foreign = DigitalBusinessCardBlock::factory()->for($other, 'card')->create();
+        $disabled = DigitalBusinessCardBlock::factory()->for($card, 'card')->disabled()->create();
 
         $this->postJson('/card/example-card/events', ['type' => 'cta', 'block_id' => $foreign->id])
             ->assertStatus(422)
