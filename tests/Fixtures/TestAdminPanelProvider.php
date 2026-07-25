@@ -10,6 +10,8 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 
@@ -27,9 +29,9 @@ class TestAdminPanelProvider extends PanelProvider
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
-                class_exists(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
-                    ? \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class
-                    : \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+                class_exists(PreventRequestForgery::class)
+                    ? PreventRequestForgery::class
+                    : ValidateCsrfToken::class,
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,

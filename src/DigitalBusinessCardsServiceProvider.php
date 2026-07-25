@@ -3,8 +3,8 @@
 namespace DigitalCardKit\Laravel;
 
 use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
-use DigitalCardKit\Laravel\Listeners\SendContactExchangeNotifications;
 use DigitalCardKit\Laravel\Listeners\QueueContactExchangeNotifications;
+use DigitalCardKit\Laravel\Listeners\SendContactExchangeNotifications;
 use DigitalCardKit\Laravel\Notifications\NotificationSender;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;

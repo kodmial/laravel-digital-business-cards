@@ -1,0 +1,541 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Filament/Resources/DigitalBusinessCardLeads/DigitalBusinessCardLeadResource.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Filament/Resources/DigitalBusinessCardLeads/DigitalBusinessCardLeadResource.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$job_title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Filament/Resources/DigitalBusinessCards/DigitalBusinessCardResource.php
+
+		-
+			message: '#^Cannot call method publicUrl\(\) on Illuminate\\Database\\Eloquent\\Model\|int\|string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: src/Filament/Resources/DigitalBusinessCards/Pages/EditDigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$is_published\.$#'
+			identifier: property.notFound
+			count: 4
+			path: src/Http/Controllers/DigitalBusinessCardController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$lead_consent_required\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$lead_form_enabled\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$lead_send_confirmation\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardController.php
+
+		-
+			message: '#^Method DigitalCardKit\\Laravel\\Http\\Controllers\\DigitalBusinessCardController\:\:resolveCard\(\) should return DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$card\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardLeadExportController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$comment\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardLeadExportController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$company\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardLeadExportController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$consent_given\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardLeadExportController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$custom_data\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardLeadExportController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardLeadExportController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardLeadExportController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$phone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardLeadExportController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$submitted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Http/Controllers/DigitalBusinessCardLeadExportController.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$card\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Mail/ContactExchangeConfirmation.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$accent_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$avatar\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$background_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$contact_methods\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$cover_image\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$first_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$last_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$lead_form_fields\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$logo\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$middle_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$text_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$theme_mode\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Filesystem\\Filesystem\:\:url\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Support\\HigherOrderCollectionProxy\<int, Illuminate\\Database\\Eloquent\\Model\>\:\:deleteMedia\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Method DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:blocks\(\) should return Illuminate\\Database\\Eloquent\\Relations\\HasMany but returns Illuminate\\Database\\Query\\Builder\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Models/DigitalBusinessCard.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardBlock\:\:\$data\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Models/DigitalBusinessCardBlock.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$card\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Notifications/LaravelMailNotificationSender.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$consent_given\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Notifications/LaravelMailNotificationSender.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/Notifications/LaravelMailNotificationSender.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$avatar\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/VCardGenerator.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$company_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/VCardGenerator.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$contact_methods\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/VCardGenerator.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$first_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/VCardGenerator.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/VCardGenerator.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$headline\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/VCardGenerator.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$job_title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/VCardGenerator.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$last_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/VCardGenerator.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$middle_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Services/VCardGenerator.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Filesystem\\Filesystem\:\:url\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Services/VCardGenerator.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/CardRenderingTest.php
+
+		-
+			message: '#^Call to an undefined static method DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:create\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: tests/CardRenderingTest.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$contact_methods\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/ContactsAndVCardTest.php
+
+		-
+			message: '#^Access to an undefined property Sabre\\VObject\\Document\:\:\$EMAIL\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/ContactsAndVCardTest.php
+
+		-
+			message: '#^Access to an undefined property Sabre\\VObject\\Document\:\:\$FN\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/ContactsAndVCardTest.php
+
+		-
+			message: '#^Access to an undefined property Sabre\\VObject\\Document\:\:\$N\.$#'
+			identifier: property.notFound
+			count: 3
+			path: tests/ContactsAndVCardTest.php
+
+		-
+			message: '#^Access to an undefined property Sabre\\VObject\\Document\:\:\$ORG\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/ContactsAndVCardTest.php
+
+		-
+			message: '#^Access to an undefined property Sabre\\VObject\\Document\:\:\$TEL\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/ContactsAndVCardTest.php
+
+		-
+			message: '#^Access to an undefined property Sabre\\VObject\\Document\:\:\$TITLE\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/ContactsAndVCardTest.php
+
+		-
+			message: '#^Call to an undefined static method DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:create\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: tests/ContactsAndVCardTest.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$button_style\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/FilamentAdminTest.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$font_family\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/FilamentAdminTest.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/FilamentAdminTest.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$is_published\.$#'
+			identifier: property.notFound
+			count: 3
+			path: tests/FilamentAdminTest.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 2
+			path: tests/FilamentAdminTest.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$card\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/FilamentAdminTest.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$custom_data\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/FilamentAdminTest.php
+
+		-
+			message: '#^Method DigitalCardKit\\Laravel\\Tests\\FilamentAdminTest\:\:createAdminLead\(\) should return DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: tests/FilamentAdminTest.php
+
+		-
+			message: '#^Method DigitalCardKit\\Laravel\\Tests\\LeadExportTest\:\:createAdminLead\(\) should return DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
+			count: 1
+			path: tests/LeadExportTest.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$card\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$consent_given\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$custom_data\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$source\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Call to an undefined method Mockery\\ExpectationInterface\|Mockery\\HigherOrderMessage\:\:once\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Call to an undefined static method DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:create\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Parameter \#1 \$lead of class DigitalCardKit\\Laravel\\Events\\ContactExchangeCompleted constructor expects DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Parameter \#1 \$lead of class DigitalCardKit\\Laravel\\Mail\\ContactExchangeConfirmation constructor expects DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Parameter \#1 \$lead of class DigitalCardKit\\Laravel\\Mail\\ContactExchangeReceived constructor expects DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Parameter \#1 \$lead of method DigitalCardKit\\Laravel\\Notifications\\LaravelMailNotificationSender\:\:sendContactExchange\(\) expects DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 3
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Parameter \#1 \$lead of method DigitalCardKit\\Laravel\\Notifications\\LaravelMailNotificationSender\:\:sendContactExchange\(\) expects DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Parameter \#1 \$sender of class DigitalCardKit\\Laravel\\Listeners\\QueueContactExchangeNotifications constructor expects DigitalCardKit\\Laravel\\Notifications\\NotificationSender, Mockery\\MockInterface given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Parameter \#1 \$sender of class DigitalCardKit\\Laravel\\Listeners\\SendContactExchangeNotifications constructor expects DigitalCardKit\\Laravel\\Notifications\\NotificationSender, Mockery\\MockInterface given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: tests/ModelsMediaAndAssetsTest.php
+
+		-
+			message: '#^Call to an undefined static method DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:create\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 2
+			path: tests/ModelsMediaAndAssetsTest.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Tests\\CustomDigitalBusinessCardLead\:\:\$digital_business_card_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: tests/PackageTest.php
+
+		-
+			message: '#^Call to an undefined static method DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:create\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 5
+			path: tests/PackageTest.php
+
+		-
+			message: '#^Call to an undefined static method DigitalCardKit\\Laravel\\Tests\\CustomDigitalBusinessCard\:\:create\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: tests/PackageTest.php

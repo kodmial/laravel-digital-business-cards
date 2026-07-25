@@ -10,8 +10,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class DigitalBusinessCardController extends Controller
 {
@@ -89,9 +89,9 @@ class DigitalBusinessCardController extends Controller
             ->route(config('digital-business-cards.route_name_prefix', 'cards.').'show', $cardModel)
             ->withInput()
             ->with([
-            'card_lead_sent' => true,
-            'card_confirmation_sent' => $cardModel->lead_send_confirmation
-                && filter_var($lead->email, FILTER_VALIDATE_EMAIL) !== false,
+                'card_lead_sent' => true,
+                'card_confirmation_sent' => $cardModel->lead_send_confirmation
+                    && filter_var($lead->email, FILTER_VALIDATE_EMAIL) !== false,
             ]);
     }
 

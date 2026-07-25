@@ -39,11 +39,19 @@
             "DigitalCardKit\\Laravel\\Tests\\": "tests/"
         }
     },
+    "config": {
+        "sort-packages": true
+    },
     "require-dev": {
+        "laravel/pint": "^1.21",
+        "nunomaduro/larastran": "^3.0",
         "orchestra/testbench": "^10.0|^11.0",
+        "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5|^12.0"
     },
     "scripts": {
+        "analyse": "phpstan analyse --memory-limit=256M",
+        "format": "pint",
         "test": "phpunit"
     },
     "extra": {

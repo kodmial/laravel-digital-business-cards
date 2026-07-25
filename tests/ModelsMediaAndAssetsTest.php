@@ -68,7 +68,7 @@ class ModelsMediaAndAssetsTest extends TestCase
     public function test_storage_url_preserves_cdn_origin_and_local_urls_are_same_origin(): void
     {
         config(['filesystems.disks.public.url' => 'https://cdn.example.test/media']);
-        $card = new DigitalBusinessCard();
+        $card = new DigitalBusinessCard;
         $this->assertSame(
             'https://cdn.example.test/media/cards/avatars/person.jpg',
             $card->storageUrl('cards/avatars/person.jpg'),

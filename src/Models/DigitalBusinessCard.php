@@ -2,8 +2,8 @@
 
 namespace DigitalCardKit\Laravel\Models;
 
-use DigitalCardKit\Laravel\Support\ContactChannelRegistry;
 use DigitalCardKit\Laravel\Support\CardTheme;
+use DigitalCardKit\Laravel\Support\ContactChannelRegistry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
