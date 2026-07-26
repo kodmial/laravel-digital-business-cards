@@ -144,9 +144,8 @@ final class ContactChannelRegistry
         static $phoneUtil = null;
         $phoneUtil ??= PhoneNumberUtil::getInstance();
 
-        static $regionCodes = ['RU' => [7], 'KZ' => [7, 997], 'BY' => [375], 'UA' => [380], 'US' => [1], null => null];
-
         try {
+            $regionCodes = Config::phoneRegionCodes();
             foreach ($regionCodes as $region => $expectedCountryCodes) {
                 try {
                     $proto = $phoneUtil->parse($value, $region);

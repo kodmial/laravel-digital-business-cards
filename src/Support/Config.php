@@ -134,4 +134,23 @@ final class Config
     {
         return (array) self::get($key, $default);
     }
+
+    /** @return array<string, array<int, int>|null> */
+    public static function phoneRegionCodes(): array
+    {
+        return [
+            'RU' => [7],
+            'KZ' => [7, 997],
+            'BY' => [375],
+            'UA' => [380],
+            'US' => [1],
+            null => null,
+        ];
+    }
+
+    /** @return array<int, string|null> */
+    public static function phoneCandidateRegions(): array
+    {
+        return ['RU', 'KZ', 'BY', 'UA', 'US', null];
+    }
 }

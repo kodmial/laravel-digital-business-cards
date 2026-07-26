@@ -29,7 +29,8 @@ class DigitalBusinessCardsServiceProvider extends PackageServiceProvider
             ->hasMigrations([
                 '2026_07_22_150000_create_digital_business_cards_tables',
                 '2026_07_24_130000_reconcile_digital_business_cards_columns',
-            ]);
+            ])
+            ->runsMigrations();
     }
 
     public function register(): void

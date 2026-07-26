@@ -6,6 +6,7 @@ use DigitalCardKit\Laravel\Http\Requests\ExportLeadsRequest;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
 use DigitalCardKit\Laravel\Support\Config;
 use Illuminate\Routing\Controller;
+use League\Csv\EscapeFormula;
 use League\Csv\Writer;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -45,35 +46,28 @@ class DigitalBusinessCardLeadExportController extends Controller
             fwrite($output, "\xEF\xBB\xBF");
             $csv = Writer::createFromStream($output);
             $csv->setDelimiter(';');
+            $formatter = new EscapeFormula;
+            $csv->addFormatter($formatter->escapeRecord(...));
             $csv->insertOne($headers);
 
             $query->orderByDesc('submitted_at')
                 ->each(function (DigitalBusinessCardLead $lead) use ($csv): void {
                     $csv->insertOne([
-                        self::escapeFormula($lead->card?->full_name),
-                        self::escapeFormula($lead->name),
-                        self::escapeFormula($lead->phone),
-                        self::escapeFormula($lead->email),
-                        self::escapeFormula($lead->company),
-                        self::escapeFormula($lead->comment),
-                        self::escapeFormula(
-                            collect($lead->custom_data ?: [])->map(
-                                fn ($value, $key) => $key.': '.(is_scalar($value) || $value === null ? $value : json_encode($value, JSON_UNESCAPED_UNICODE))
-                            )->implode("\n")
-                        ),
-                        self::escapeFormula(__('digital-business-cards::messages.export.'.($lead->consent_given ? 'yes' : 'no'))),
-                        self::escapeFormula($lead->submitted_at?->format('d.m.Y H:i')),
+                        (string) $lead->card?->full_name,
+                        (string) $lead->name,
+                        (string) $lead->phone,
+                        (string) $lead->email,
+                        (string) $lead->company,
+                        (string) $lead->comment,
+                        (string) collect($lead->custom_data ?: [])->map(
+                            fn ($value, $key) => $key.': '.(is_scalar($value) || $value === null ? $value : json_encode($value, JSON_UNESCAPED_UNICODE))
+                        )->implode("\n"),
+                        (string) __('digital-business-cards::messages.export.'.($lead->consent_given ? 'yes' : 'no')),
+                        (string) $lead->submitted_at?->format('d.m.Y H:i'),
                     ]);
                 });
         }, 'contacts-'.now()->format('Y-m-d-His').'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
-    }
-
-    private static function escapeFormula(mixed $value): string
-    {
-        $value = (string) $value;
-
-        return preg_match('/^[=+\-@\t\r]/u', $value) ? "'".$value : $value;
     }
 }

@@ -3,6 +3,7 @@
 namespace DigitalCardKit\Laravel\Http\Requests;
 
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
+use DigitalCardKit\Laravel\Support\Config;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -48,7 +49,7 @@ class StoreCardLeadRequest extends FormRequest
                         return;
                     }
 
-                    $candidates = ['RU', 'KZ', 'BY', 'UA', 'US', null];
+                    $candidates = Config::phoneCandidateRegions();
                     foreach ($candidates as $region) {
                         try {
                             $proto = $phoneUtil->parse($value, $region);
