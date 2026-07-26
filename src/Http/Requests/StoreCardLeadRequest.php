@@ -7,6 +7,7 @@ use DigitalCardKit\Laravel\Support\Config;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use libphonenumber\NumberParseException;
 use libphonenumber\PhoneNumberUtil;
 
 class StoreCardLeadRequest extends FormRequest
@@ -56,7 +57,7 @@ class StoreCardLeadRequest extends FormRequest
                             if ($phoneUtil->isValidNumber($proto)) {
                                 return;
                             }
-                        } catch (\Throwable) {
+                        } catch (NumberParseException) {
                             continue;
                         }
                     }
@@ -66,7 +67,7 @@ class StoreCardLeadRequest extends FormRequest
                         if ($phoneUtil->isValidNumber($proto)) {
                             return;
                         }
-                    } catch (\Throwable) {
+                    } catch (NumberParseException) {
                     }
 
                     $fail(__('validation.phone', ['attribute' => $attribute]));

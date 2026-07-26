@@ -3,6 +3,7 @@
 namespace DigitalCardKit\Laravel\Support;
 
 use League\Uri\Uri;
+use libphonenumber\NumberParseException;
 use libphonenumber\PhoneNumberFormat;
 use libphonenumber\PhoneNumberUtil;
 
@@ -161,7 +162,7 @@ final class ContactChannelRegistry
                         'BY' => self::formatByMask($phoneUtil->format($proto, PhoneNumberFormat::E164)),
                         default => $phoneUtil->format($proto, PhoneNumberFormat::INTERNATIONAL),
                     };
-                } catch (\Throwable) {
+                } catch (NumberParseException) {
                     continue;
                 }
             }
@@ -170,7 +171,7 @@ final class ContactChannelRegistry
                 $proto = $phoneUtil->parse($value, null);
 
                 return $phoneUtil->format($proto, PhoneNumberFormat::INTERNATIONAL);
-            } catch (\Throwable) {
+            } catch (NumberParseException) {
                 return $value;
             }
         } catch (\Throwable) {
