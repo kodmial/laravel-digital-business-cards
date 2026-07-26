@@ -2,14 +2,13 @@
 
 namespace DigitalCardKit\Laravel\Support;
 
+use League\Uri\Uri;
+use libphonenumber\NumberParseException;
+use libphonenumber\PhoneNumberFormat;
+use libphonenumber\PhoneNumberUtil;
+
 final class ContactChannelRegistry
 {
-    /**
-     * Schemes a contact is allowed to link to from the public card. Contact
-     * values arrive from a JSON column that a host application can write to
-     * directly, so an unrecognised channel must never become a javascript:
-     * or data: href.
-     */
     private const SAFE_SCHEMES = ['http', 'https', 'tel', 'mailto'];
 
     /** @return array<string, string> */
@@ -40,10 +39,6 @@ final class ContactChannelRegistry
         }
 
         if (in_array($type, ['max', 'website', 'link'], true) && $value !== '' && ! preg_match('#^https?://#i', $value)) {
-            // A value that already carries some other scheme is not a web link
-            // the card can open, so it is refused rather than turned into
-            // "https://javascript:...". The negative lookahead keeps
-            // "example.test:8080/path" out of the scheme branch.
             return preg_match('#^[a-z][a-z0-9+.\-]*:(?!\d)#i', $value) ? '' : 'https://'.$value;
         }
 
@@ -71,10 +66,6 @@ final class ContactChannelRegistry
     }
 
     /**
-     * Group consecutive messengers so the card renders them as one row. This
-     * lives next to the channel definitions, rather than in the template, so
-     * the layout rule can be asserted directly.
-     *
      * @param  array<int, array<string, mixed>>  $contacts
      * @return array<int, array{type: string, items: array<int, array<string, mixed>>}>
      */
@@ -100,14 +91,18 @@ final class ContactChannelRegistry
 
     private static function safeUrl(string $url): string
     {
-        // Matched on the raw string rather than with parse_url(), which reads
-        // "tel:112" as host:port and reports no scheme at all — that would
-        // discard short numbers such as emergency lines and extensions.
-        if (! preg_match('#^([a-z][a-z0-9+.\-]*):#i', $url, $matches)) {
+        try {
+            $uri = Uri::new($url);
+            $scheme = $uri->getScheme();
+        } catch (\Throwable) {
             return '';
         }
 
-        return in_array(strtolower($matches[1]), self::SAFE_SCHEMES, true) ? $url : '';
+        if ($scheme === null) {
+            return '';
+        }
+
+        return in_array(strtolower($scheme), self::SAFE_SCHEMES, true) ? (string) $uri : '';
     }
 
     public static function label(array $contact): string
@@ -142,14 +137,64 @@ final class ContactChannelRegistry
             return $value;
         }
 
-        $digits = preg_replace('/\D/', '', $value);
-        if (! preg_match('/^[78](\d{10})$/', (string) $digits, $matches)) {
+        return self::formatPhoneInternational($value);
+    }
+
+    private static function formatPhoneInternational(string $value): string
+    {
+        static $phoneUtil = null;
+        $phoneUtil ??= PhoneNumberUtil::getInstance();
+
+        try {
+            $regionCodes = Config::phoneRegionCodes();
+            foreach ($regionCodes as $region => $expectedCountryCodes) {
+                try {
+                    $proto = $phoneUtil->parse($value, $region);
+                    if (! $phoneUtil->isValidNumber($proto)) {
+                        continue;
+                    }
+                    if ($expectedCountryCodes !== null && ! in_array($proto->getCountryCode(), $expectedCountryCodes, true)) {
+                        continue;
+                    }
+
+                    return match ($region) {
+                        'RU', 'KZ' => self::formatRuKzMask($phoneUtil->format($proto, PhoneNumberFormat::E164)),
+                        'BY' => self::formatByMask($phoneUtil->format($proto, PhoneNumberFormat::E164)),
+                        default => $phoneUtil->format($proto, PhoneNumberFormat::INTERNATIONAL),
+                    };
+                } catch (NumberParseException) {
+                    continue;
+                }
+            }
+
+            try {
+                $proto = $phoneUtil->parse($value, null);
+
+                return $phoneUtil->format($proto, PhoneNumberFormat::INTERNATIONAL);
+            } catch (NumberParseException) {
+                return $value;
+            }
+        } catch (\Throwable) {
             return $value;
         }
+    }
 
-        $prefix = str_starts_with($value, '+') ? '+7' : $digits[0];
+    private static function formatRuKzMask(string $e164): string
+    {
+        if (! preg_match('/^\+7(\d{3})(\d{3})(\d{2})(\d{2})$/', $e164, $m)) {
+            return $e164;
+        }
 
-        return sprintf('%s (%s) %s-%s-%s', $prefix, substr($matches[1], 0, 3), substr($matches[1], 3, 3), substr($matches[1], 6, 2), substr($matches[1], 8, 2));
+        return sprintf('+7 (%s) %s-%s-%s', $m[1], $m[2], $m[3], $m[4]);
+    }
+
+    private static function formatByMask(string $e164): string
+    {
+        if (! preg_match('/^\+375(\d{2})(\d{3})(\d{2})(\d{2})$/', $e164, $m)) {
+            return $e164;
+        }
+
+        return sprintf('+375 (%s) %s-%s-%s', $m[1], $m[2], $m[3], $m[4]);
     }
 
     private static function websiteDomain(string $value): string
@@ -159,7 +204,13 @@ final class ContactChannelRegistry
         }
 
         $normalized = self::normalize('website', $value);
-        $host = parse_url($normalized, PHP_URL_HOST);
+
+        try {
+            $uri = Uri::new($normalized);
+            $host = $uri->getHost();
+        } catch (\Throwable) {
+            $host = null;
+        }
 
         if (is_string($host) && $host !== '' && ! preg_match('/\s/u', $host)) {
             $host = preg_replace('/^www\./i', '', rtrim($host, '.')) ?? $host;

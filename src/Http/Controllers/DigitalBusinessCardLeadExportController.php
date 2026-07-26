@@ -6,6 +6,8 @@ use DigitalCardKit\Laravel\Http\Requests\ExportLeadsRequest;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
 use DigitalCardKit\Laravel\Support\Config;
 use Illuminate\Routing\Controller;
+use League\Csv\EscapeFormula;
+use League\Csv\Writer;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DigitalBusinessCardLeadExportController extends Controller
@@ -27,48 +29,45 @@ class DigitalBusinessCardLeadExportController extends Controller
             $query->where('submitted_at', '<=', $filters['date_to']);
         }
 
-        return response()->streamDownload(function () use ($query): void {
+        $headers = [
+            __('digital-business-cards::messages.export.card'),
+            __('digital-business-cards::messages.export.name'),
+            __('digital-business-cards::messages.export.phone'),
+            __('digital-business-cards::messages.export.email'),
+            __('digital-business-cards::messages.export.company'),
+            __('digital-business-cards::messages.export.comment'),
+            __('digital-business-cards::messages.export.custom_fields'),
+            __('digital-business-cards::messages.export.consent'),
+            __('digital-business-cards::messages.export.date'),
+        ];
+
+        return response()->streamDownload(function () use ($query, $headers): void {
             $output = fopen('php://output', 'wb');
             fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, [
-                __('digital-business-cards::messages.export.card'),
-                __('digital-business-cards::messages.export.name'),
-                __('digital-business-cards::messages.export.phone'),
-                __('digital-business-cards::messages.export.email'),
-                __('digital-business-cards::messages.export.company'),
-                __('digital-business-cards::messages.export.comment'),
-                __('digital-business-cards::messages.export.custom_fields'),
-                __('digital-business-cards::messages.export.consent'),
-                __('digital-business-cards::messages.export.date'),
-            ], ';');
+            $csv = Writer::createFromStream($output);
+            $csv->setDelimiter(';');
+            $formatter = new EscapeFormula;
+            $csv->addFormatter($formatter->escapeRecord(...));
+            $csv->insertOne($headers);
 
             $query->orderByDesc('submitted_at')
-                ->each(function (DigitalBusinessCardLead $lead) use ($output): void {
-                    fputcsv($output, array_map(self::escapeCsvCell(...), [
-                        $lead->card?->full_name,
-                        $lead->name,
-                        $lead->phone,
-                        $lead->email,
-                        $lead->company,
-                        $lead->comment,
-                        collect($lead->custom_data ?: [])->map(
+                ->each(function (DigitalBusinessCardLead $lead) use ($csv): void {
+                    $csv->insertOne([
+                        (string) $lead->card?->full_name,
+                        (string) $lead->name,
+                        (string) $lead->phone,
+                        (string) $lead->email,
+                        (string) $lead->company,
+                        (string) $lead->comment,
+                        (string) collect($lead->custom_data ?: [])->map(
                             fn ($value, $key) => $key.': '.(is_scalar($value) || $value === null ? $value : json_encode($value, JSON_UNESCAPED_UNICODE))
                         )->implode("\n"),
-                        __('digital-business-cards::messages.export.'.($lead->consent_given ? 'yes' : 'no')),
-                        $lead->submitted_at?->format('d.m.Y H:i'),
-                    ]), ';');
+                        (string) __('digital-business-cards::messages.export.'.($lead->consent_given ? 'yes' : 'no')),
+                        (string) $lead->submitted_at?->format('d.m.Y H:i'),
+                    ]);
                 });
-
-            fclose($output);
         }, 'contacts-'.now()->format('Y-m-d-His').'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
-    }
-
-    private static function escapeCsvCell(mixed $value): string
-    {
-        $value = (string) $value;
-
-        return preg_match('/^[=+\-@\t\r]/u', $value) ? "'".$value : $value;
     }
 }

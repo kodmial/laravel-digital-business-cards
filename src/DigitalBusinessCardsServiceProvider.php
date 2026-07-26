@@ -13,17 +13,33 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class DigitalBusinessCardsServiceProvider extends ServiceProvider
+class DigitalBusinessCardsServiceProvider extends PackageServiceProvider
 {
+    public function configurePackage(Package $package): void
+    {
+        $package
+            ->name('digital-business-cards')
+            ->hasConfigFile()
+            ->hasViews()
+            ->hasTranslations()
+            ->hasRoute('web')
+            ->hasMigrations([
+                '2026_07_22_150000_create_digital_business_cards_tables',
+                '2026_07_24_130000_reconcile_digital_business_cards_columns',
+            ])
+            ->runsMigrations();
+    }
+
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/digital-business-cards.php', 'digital-business-cards');
+        parent::register();
 
         if (! $this->app->bound(NotificationSender::class)) {
             $this->app->bind(NotificationSender::class, function ($app): NotificationSender {
-                $sender = $app['config']->get('digital-business-cards.notification_sender');
+                $sender = Config::get('notification_sender');
 
                 return $app->make($sender);
             });
@@ -32,12 +48,9 @@ class DigitalBusinessCardsServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        RateLimits::register();
+        parent::boot();
 
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'digital-business-cards');
-        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'digital-business-cards');
-        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        RateLimits::register();
 
         $this->registerLeadExportGate();
 
@@ -51,33 +64,11 @@ class DigitalBusinessCardsServiceProvider extends ServiceProvider
         }
 
         $this->publishes([
-            __DIR__.'/../config/digital-business-cards.php' => config_path('digital-business-cards.php'),
-        ], 'digital-business-cards-config');
-
-        $this->publishes([
-            __DIR__.'/../database/migrations' => database_path('migrations'),
-        ], 'digital-business-cards-migrations');
-
-        $this->publishes([
             __DIR__.'/../resources/css/card.css' => public_path('vendor/digital-business-cards/card.css'),
             __DIR__.'/../resources/js/card.js' => public_path('vendor/digital-business-cards/card.js'),
         ], 'digital-business-cards-assets');
-
-        $this->publishes([
-            __DIR__.'/../resources/views' => resource_path('views/vendor/digital-business-cards'),
-        ], 'digital-business-cards-views');
-
-        $this->publishes([
-            __DIR__.'/../resources/lang' => lang_path('vendor/digital-business-cards'),
-        ], 'digital-business-cards-translations');
     }
 
-    /**
-     * The lead export dumps every stored contact, so it is gated even though
-     * the route also carries host-configurable middleware. The default only
-     * requires an authenticated user; a host that needs finer rules defines
-     * the ability itself and this registration steps aside.
-     */
     private function registerLeadExportGate(): void
     {
         $ability = Config::leadExportAbility();
@@ -90,11 +81,6 @@ class DigitalBusinessCardsServiceProvider extends ServiceProvider
             || self::authenticatedOnAPanelGuard());
     }
 
-    /**
-     * Gate resolves its user from the default guard, but a Filament panel may
-     * authenticate on its own (`->authGuard('admin')`). Without this the
-     * packaged default would refuse an admin the route middleware just let in.
-     */
     private static function authenticatedOnAPanelGuard(): bool
     {
         if (! class_exists(Filament::class)) {
