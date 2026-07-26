@@ -62,12 +62,15 @@ class StoreCardLeadRequest extends FormRequest
                         }
                     }
 
+                    $proto = null;
                     try {
                         $proto = $phoneUtil->parse($value, null);
-                        if ($phoneUtil->isValidNumber($proto)) {
-                            return;
-                        }
                     } catch (NumberParseException) {
+                        $proto = null;
+                    }
+
+                    if ($proto !== null && $phoneUtil->isValidNumber($proto)) {
+                        return;
                     }
 
                     $fail(__('validation.phone', ['attribute' => $attribute]));
