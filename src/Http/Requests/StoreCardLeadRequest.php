@@ -63,7 +63,7 @@ class StoreCardLeadRequest extends FormRequest
 
                     try {
                         $proto = $phoneUtil->parse($value, null);
-                        if ($phoneUtil->isPossibleNumber($proto)) {
+                        if ($phoneUtil->isValidNumber($proto)) {
                             return;
                         }
                     } catch (\Throwable) {

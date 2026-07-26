@@ -39,7 +39,7 @@ class DigitalBusinessCardsServiceProvider extends PackageServiceProvider
 
         if (! $this->app->bound(NotificationSender::class)) {
             $this->app->bind(NotificationSender::class, function ($app): NotificationSender {
-                $sender = $app['config']->get('digital-business-cards.notification_sender');
+                $sender = Config::get('notification_sender');
 
                 return $app->make($sender);
             });
