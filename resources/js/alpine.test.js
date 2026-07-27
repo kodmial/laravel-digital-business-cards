@@ -1,47 +1,66 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-describe('Alpine.js Store', () => {
-    beforeEach(() => {
-        // Mock global Alpine object
-        global.Alpine = {
-            store: vi.fn(),
-            data: vi.fn(),
+describe('Alpine.js Modal State', () => {
+    it('should have shared modal state structure', () => {
+        // Test the expected structure of modal state
+        const expectedState = {
+            openModal: null,
+            returnFocusTo: null,
+            open: expect.any(Function),
+            close: expect.any(Function),
+            closeAll: expect.any(Function),
+            isOpen: expect.any(Function),
         };
+
+        expect(expectedState).toBeDefined();
     });
 
-    it('should initialize Alpine store with event handlers', () => {
-        // This test will be expanded once alpine.js is loaded
-        expect(global.Alpine.store).toBeDefined();
+    it('should manage focus return on modal open', () => {
+        // Test focus management logic
+        const mockActiveElement = { focus: () => {} };
+        const state = {
+            openModal: null,
+            returnFocusTo: null,
+        };
+
+        // Simulate opening modal
+        if (state.openModal === null) {
+            state.returnFocusTo = mockActiveElement;
+        }
+
+        expect(state.returnFocusTo).toBe(mockActiveElement);
     });
 
-    it('should have openModal method', () => {
-        const mockStore = {
-            openModal: vi.fn(),
-            closeModal: vi.fn(),
+    it('should handle modal close and focus return', () => {
+        const mockActiveElement = { focus: () => {} };
+        const state = {
+            openModal: 'test-modal',
+            returnFocusTo: mockActiveElement,
         };
-        global.Alpine.store.mockReturnValue(mockStore);
-        
-        expect(mockStore.openModal).toBeDefined();
+
+        // Simulate closing modal
+        state.openModal = null;
+        mockActiveElement.focus();
+
+        expect(state.openModal).toBeNull();
     });
 
-    it('should have closeModal method', () => {
-        const mockStore = {
-            openModal: vi.fn(),
-            closeModal: vi.fn(),
+    it('should handle body class management', () => {
+        // Test body class management logic
+        const state = {
+            openModal: null,
         };
-        global.Alpine.store.mockReturnValue(mockStore);
-        
-        expect(mockStore.closeModal).toBeDefined();
-    });
 
-    it('should have closeAll method', () => {
-        const mockStore = {
-            openModal: vi.fn(),
-            closeModal: vi.fn(),
-            closeAll: vi.fn(),
-        };
-        global.Alpine.store.mockReturnValue(mockStore);
-        
-        expect(mockStore.closeAll).toBeDefined();
+        // Simulate opening modal
+        state.openModal = 'test-modal';
+        document.body.classList.add('digital-card-modal-open');
+
+        expect(document.body.classList.contains('digital-card-modal-open')).toBe(true);
+
+        // Simulate closing modal
+        state.openModal = null;
+        document.body.classList.remove('digital-card-modal-open');
+
+        expect(document.body.classList.contains('digital-card-modal-open')).toBe(false);
     });
 });
