@@ -14,10 +14,10 @@ use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 trait CreatesCards
 {
     /** @param  array<string, mixed>  $attributes */
-    protected function createCard(array $attributes = []): DigitalBusinessCard
+    protected function createCard(array $attributes = [])
     {
         return DigitalBusinessCard::factory()
-            ->published()
+            ->state(['is_published' => true])
             ->create(array_merge([
                 'slug' => 'example-card',
                 'first_name' => 'Alex',

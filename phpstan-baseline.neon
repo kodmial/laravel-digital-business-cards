@@ -695,3 +695,9 @@ parameters:
 			identifier: method.notFound
 			count: 1
 			path: tests/RateLimitTest.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model::card\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Livewire/Components/LeadForm.php

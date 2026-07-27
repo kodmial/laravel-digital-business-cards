@@ -9,7 +9,6 @@ use DigitalCardKit\Laravel\Support\Config;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
 use libphonenumber\NumberParseException;
 use libphonenumber\PhoneNumberUtil;
 use Livewire\Attributes\Locked;
@@ -48,21 +47,23 @@ class LeadForm extends Component
         $this->leadData = $this->initializeLeadData();
     }
 
-    public function getCardProperty(): DigitalBusinessCard
+    public function getCardProperty()
     {
-        return DigitalBusinessCard::where('id', $this->cardId)
+        $cardModel = Config::model('card');
+        return $cardModel::query()
+            ->where('id', $this->cardId)
             ->where('is_published', true)
             ->firstOrFail();
     }
 
     public function getLeadFieldsProperty(): array
     {
-        return $this->card->validatableLeadFields();
+        return $this->getCardProperty()->validatableLeadFields();
     }
 
     public function rules(): array
     {
-        $card = $this->card;
+        $card = $this->getCardProperty();
         $rules = [];
         $phoneUtil = PhoneNumberUtil::getInstance();
 
@@ -114,7 +115,7 @@ class LeadForm extends Component
             $rules[(string) $field['key']] = $fieldRules;
         }
 
-        $rules['consent'] = $card->lead_consent_required
+        $rules['consent'] = ($card->lead_consent_required ?? false)
             ? ['required', 'accepted']
             : ['sometimes', 'accepted'];
 
@@ -129,7 +130,7 @@ class LeadForm extends Component
 
         $lead = $this->createLead($validated);
 
-        event(new ContactExchangeCompleted($lead));
+        event(new ContactExchangeCompleted($lead->id));
 
         $this->submitted = true;
         $this->sending = false;
@@ -141,7 +142,7 @@ class LeadForm extends Component
         $this->dispatch('lead-submitted');
     }
 
-    protected function createLead(array $validated): DigitalBusinessCardLead
+    protected function createLead(array $validated)
     {
         $leadData = Arr::except($validated, ['consent']);
 
@@ -152,14 +153,16 @@ class LeadForm extends Component
             ),
             [
                 'custom_data' => Arr::except($leadData, self::NATIVE_KEYS),
-                'consent_given' => $this->boolean('consent'),
+                'consent_given' => (bool) $this->consent,
                 'source' => Str::limit((string) request()->header('Referer'), 255, ''),
                 'submitted_at' => now(),
             ],
         );
 
-        $lead = Config::model('lead')::create($attributes);
-        $lead->card()->associate($this->card);
+        $leadModel = Config::model('lead');
+        $lead = $leadModel::query()->create($attributes);
+        $card = $this->getCardProperty();
+        $lead->card()->associate($card);
         $lead->save();
 
         return $lead;
@@ -168,7 +171,7 @@ class LeadForm extends Component
     protected function initializeLeadData(): array
     {
         $data = [];
-        foreach ($this->leadFields as $field) {
+        foreach ($this->getLeadFieldsProperty() as $field) {
             $key = (string) $field['key'];
             $data[$key] = '';
         }
@@ -176,9 +179,9 @@ class LeadForm extends Component
         return $data;
     }
 
-    public function render(): View
+    public function render()
     {
         return view('digital-business-cards::livewire.lead-form')
-            ->with('card', $this->card);
+            ->with('card', $this->getCardProperty());
     }
 }
