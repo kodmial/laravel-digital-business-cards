@@ -30,16 +30,14 @@
                     <textarea 
                         name="{{ $key }}" 
                         rows="3" 
-                        wire:model="leadData.{{ $key }}"
-                        wire:model.debounce.300ms="leadData.{{ $key }}"
+                        wire:model.live.debounce.300ms="leadData.{{ $key }}"
                         @required($field['required'] ?? false)
                     >{{ old($key) }}</textarea>
                 @else
                     <input 
                         type="{{ $field['type'] ?? 'text' }}" 
                         name="{{ $key }}" 
-                        wire:model="leadData.{{ $key }}"
-                        wire:model.debounce.300ms="leadData.{{ $key }}"
+                        wire:model.live.debounce.300ms="leadData.{{ $key }}"
                         @required($field['required'] ?? false)
                     >
                 @endif

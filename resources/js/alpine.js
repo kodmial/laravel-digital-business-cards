@@ -4,7 +4,8 @@
  */
 
 document.addEventListener('alpine:init', () => {
-    Alpine.data('modalManager', () => ({
+    // Shared modal state management
+    const sharedModalState = () => ({
         openModal: null,
         returnFocusTo: null,
 
@@ -17,9 +18,10 @@ document.addEventListener('alpine:init', () => {
             }
 
             this.openModal = name;
-
+            document.body.classList.add('digital-card-modal-open');
+            
             // Focus management
-            this.$nextTick(() => {
+            requestAnimationFrame(() => {
                 const dialog = document.querySelector(`[data-modal="${name}"]`);
                 dialog?.querySelector('button, input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])')?.focus();
             });
@@ -27,12 +29,14 @@ document.addEventListener('alpine:init', () => {
 
         close() {
             this.openModal = null;
+            document.body.classList.remove('digital-card-modal-open');
             this.returnFocusTo?.focus();
             this.returnFocusTo = null;
         },
 
         closeAll() {
             this.openModal = null;
+            document.body.classList.remove('digital-card-modal-open');
             this.returnFocusTo?.focus();
             this.returnFocusTo = null;
         },
@@ -40,77 +44,50 @@ document.addEventListener('alpine:init', () => {
         isOpen(name) {
             return this.openModal === name;
         },
+    });
 
-        init() {
-            // Handle Escape key
-            this.$el.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    this.closeAll();
-                }
-            });
+    Alpine.data('modalManager', () => {
+        const state = sharedModalState();
 
-            // Handle Tab key for focus trap
-            this.$el.addEventListener('keydown', (e) => {
-                if (e.key !== 'Tab') return;
+        return {
+            ...state,
 
-                const visibleModal = document.querySelector('[data-modal]:not([hidden])');
-                if (!visibleModal) return;
+            init() {
+                // Handle Escape key
+                this.$el.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.closeAll();
+                    }
+                });
 
-                const focusable = [...visibleModal.querySelectorAll(
-                    'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-                )].filter(el => !el.hidden);
+                // Handle Tab key for focus trap
+                this.$el.addEventListener('keydown', (e) => {
+                    if (e.key !== 'Tab') return;
 
-                if (focusable.length === 0) return;
+                    const visibleModal = document.querySelector('[data-modal]:not([hidden])');
+                    if (!visibleModal) return;
 
-                const first = focusable[0];
-                const last = focusable[focusable.length - 1];
+                    const focusable = [...visibleModal.querySelectorAll(
+                        'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                    )].filter(el => !el.hidden);
 
-                if (e.shiftKey && document.activeElement === first) {
-                    e.preventDefault();
-                    last.focus();
-                } else if (!e.shiftKey && document.activeElement === last) {
-                    e.preventDefault();
-                    first.focus();
-                }
-            });
-        }
-    }));
+                    if (focusable.length === 0) return;
+
+                    const first = focusable[0];
+                    const last = focusable[focusable.length - 1];
+
+                    if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault();
+                        last.focus();
+                    } else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault();
+                        first.focus();
+                    }
+                });
+            }
+        };
+    });
 
     // Global event bus for Livewire communication
-    Alpine.store('events', {
-        modals: {
-            open: null,
-            returnFocusTo: null,
-        },
-        
-        openModal(name) {
-            if (this.modals.open === null) {
-                this.modals.returnFocusTo = document.activeElement instanceof HTMLElement 
-                    ? document.activeElement 
-                    : null;
-            }
-            this.modals.open = name;
-            
-            document.body.classList.add('digital-card-modal-open');
-            
-            requestAnimationFrame(() => {
-                const dialog = document.querySelector(`[data-modal="${name}"]`);
-                dialog?.querySelector('button, input, textarea, select, a[href], [tabindex]:not([tabindex="-1"])')?.focus();
-            });
-        },
-        
-        closeModal() {
-            this.modals.open = null;
-            document.body.classList.remove('digital-card-modal-open');
-            this.modals.returnFocusTo?.focus();
-            this.modals.returnFocusTo = null;
-        },
-        
-        closeAll() {
-            this.modals.open = null;
-            document.body.classList.remove('digital-card-modal-open');
-            this.modals.returnFocusTo?.focus();
-            this.modals.returnFocusTo = null;
-        }
-    });
+    Alpine.store('events', sharedModalState());
 });

@@ -20,8 +20,8 @@ return [
     // visitor on one card; "per_ip" bounds the same visitor across every card,
     // so spreading requests around does not lift the ceiling.
     'rate_limits' => [
-        'per_card' => 10,
-        'per_ip' => 50,
+        'leads' => ['per_card' => 10, 'per_ip' => 30],
+        'events' => ['per_card' => 120, 'per_ip' => 600],
     ],
     'models' => [
         'card' => DigitalBusinessCard::class,

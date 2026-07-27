@@ -2,8 +2,12 @@
 
 namespace DigitalCardKit\Laravel\Tests;
 
+use DigitalCardKit\Laravel\DigitalBusinessCardsServiceProvider;
+use DigitalCardKit\Laravel\Livewire\Components\LeadForm;
+use DigitalCardKit\Laravel\Livewire\LivewireServiceProvider;
 use DigitalCardKit\Laravel\Tests\Concerns\CreatesCards;
 use Illuminate\Support\Facades\Event;
+use Livewire\Livewire;
 
 class ConditionalLogicTest extends TestCase
 {
@@ -16,32 +20,32 @@ class ConditionalLogicTest extends TestCase
 
     public function test_livewire_service_provider_registered_when_enabled(): void
     {
-        if (! class_exists(\Livewire\Livewire::class)) {
+        if (! class_exists(Livewire::class)) {
             $this->markTestSkipped('Livewire is not installed');
         }
 
         config(['digital-business-cards.use_livewire' => true]);
-        
+
         // Check if the component class exists
-        $this->assertTrue(class_exists(\DigitalCardKit\Laravel\Livewire\Components\LeadForm::class));
+        $this->assertTrue(class_exists(LeadForm::class));
     }
 
     public function test_livewire_service_provider_not_registered_when_disabled(): void
     {
         config(['digital-business-cards.use_livewire' => false]);
-        
+
         $app = $this->app;
-        $provider = new \DigitalCardKit\Laravel\DigitalBusinessCardsServiceProvider($app);
+        $provider = new DigitalBusinessCardsServiceProvider($app);
         $provider->register();
-        
-        $this->assertFalse($app->bound(\DigitalCardKit\Laravel\Livewire\LivewireServiceProvider::class));
+
+        $this->assertFalse($app->bound(LivewireServiceProvider::class));
     }
 
     public function test_forms_work_without_livewire(): void
     {
         Event::fake();
         config(['digital-business-cards.use_livewire' => false]);
-        
+
         $card = $this->createCard([
             'lead_form_enabled' => true,
             'lead_form_fields' => [
@@ -49,13 +53,13 @@ class ConditionalLogicTest extends TestCase
                 ['key' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true],
             ],
         ]);
-        
+
         $response = $this->post('/card/example-card/contacts', [
             'name' => 'John Doe',
             'email' => 'john@example.com',
             'consent' => '1',
         ]);
-        
+
         $response->assertRedirect();
         $this->assertDatabaseHas('digital_business_card_leads', [
             'name' => 'John Doe',
@@ -63,14 +67,23 @@ class ConditionalLogicTest extends TestCase
         ]);
     }
 
+    public function test_forms_work_with_livewire_enabled(): void
+    {
+        Event::fake();
+        config(['digital-business-cards.use_livewire' => true]);
+
+        $this->assertTrue(class_exists(\DigitalCardKit\Laravel\Livewire\LivewireServiceProvider::class));
+        $this->assertTrue(class_exists(\DigitalCardKit\Laravel\Livewire\Components\LeadForm::class));
+    }
+
     public function test_modals_work_without_livewire(): void
     {
         config(['digital-business-cards.use_livewire' => false]);
-        
+
         $card = $this->createCard(['lead_form_enabled' => true]);
-        
+
         $response = $this->get('/card/example-card');
-        
+
         $response->assertStatus(200);
         $response->assertSee('data-modal', false);
         $response->assertSee('data-close-modal', false);
@@ -80,11 +93,11 @@ class ConditionalLogicTest extends TestCase
     public function test_javascript_fallback_works_without_alpine(): void
     {
         config(['digital-business-cards.use_livewire' => false]);
-        
+
         $card = $this->createCard(['lead_form_enabled' => true]);
-        
+
         $response = $this->get('/card/example-card');
-        
+
         $response->assertStatus(200);
         $response->assertSee('card.js', false);
         $response->assertDontSee('alpine.js', false);
@@ -93,15 +106,15 @@ class ConditionalLogicTest extends TestCase
     public function test_both_approaches_produce_same_html_structure(): void
     {
         $card = $this->createCard(['lead_form_enabled' => true]);
-        
+
         // Test with Livewire disabled
         config(['digital-business-cards.use_livewire' => false]);
         $responseWithout = $this->get('/card/example-card');
         $htmlWithout = $responseWithout->getContent();
-        
+
         // Both should contain form structure
         $this->assertStringContainsString('digital-card-form', $htmlWithout);
-        
+
         // Both should contain modal structure
         $this->assertStringContainsString('data-modal', $htmlWithout);
     }
@@ -110,12 +123,12 @@ class ConditionalLogicTest extends TestCase
     {
         // Test with Livewire disabled (default state)
         config(['digital-business-cards.use_livewire' => false]);
-        
+
         $card = $this->createCard(['lead_form_enabled' => true]);
-        
+
         $response1 = $this->get('/card/example-card');
         $response1->assertStatus(200);
-        
+
         // Test that basic functionality still works
         $this->assertEquals(200, $response1->status());
     }

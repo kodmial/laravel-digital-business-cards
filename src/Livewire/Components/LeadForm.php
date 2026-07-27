@@ -97,18 +97,7 @@ class LeadForm extends Component
                         }
                     }
 
-                    $proto = null;
-                    try {
-                        $proto = $phoneUtil->parse($value, null);
-                    } catch (NumberParseException) {
-                        $proto = null;
-                    }
-
-                    if ($proto !== null && $phoneUtil->isValidNumber($proto)) {
-                        return;
-                    }
-
-                    $fail(__('validation.phone', ['attribute' => $attribute]));
+                    $fail(__('The :attribute must be a valid phone number.'));
                 };
             }
 
@@ -117,7 +106,7 @@ class LeadForm extends Component
 
         $rules['consent'] = ($card->lead_consent_required ?? false)
             ? ['required', 'accepted']
-            : ['sometimes', 'accepted'];
+            : ['sometimes', 'nullable', 'boolean'];
 
         return $rules;
     }
