@@ -10,11 +10,12 @@ use Illuminate\Routing\Controller;
 class AssetController extends Controller
 {
     /** The only files this controller will ever serve. */
-    public const FILES = ['card.css', 'card.js'];
+    public const FILES = ['card.css', 'card.js', 'alpine.js'];
 
     private const CONTENT_TYPES = [
         'card.css' => 'text/css; charset=utf-8',
         'card.js' => 'text/javascript; charset=utf-8',
+        'alpine.js' => 'text/javascript; charset=utf-8',
     ];
 
     public function __invoke(Request $request, string $file): Response

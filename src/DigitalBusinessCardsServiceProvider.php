@@ -5,6 +5,7 @@ namespace DigitalCardKit\Laravel;
 use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
 use DigitalCardKit\Laravel\Listeners\QueueContactExchangeNotifications;
 use DigitalCardKit\Laravel\Listeners\SendContactExchangeNotifications;
+use DigitalCardKit\Laravel\Livewire\LivewireServiceProvider;
 use DigitalCardKit\Laravel\Notifications\NotificationSender;
 use DigitalCardKit\Laravel\Support\Config;
 use DigitalCardKit\Laravel\Support\RateLimits;
@@ -13,6 +14,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -43,6 +45,11 @@ class DigitalBusinessCardsServiceProvider extends PackageServiceProvider
 
                 return $app->make($sender);
             });
+        }
+
+        // Register Livewire components conditionally only when enabled in config
+        if (class_exists(Livewire::class) && Config::get('use_livewire', false)) {
+            $this->app->register(LivewireServiceProvider::class);
         }
     }
 
