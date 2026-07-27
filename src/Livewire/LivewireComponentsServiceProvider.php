@@ -2,18 +2,32 @@
 
 namespace DigitalCardKit\Laravel\Livewire;
 
-use DigitalCardKit\Laravel\Livewire\Components\LeadForm;
 use Illuminate\Support\ServiceProvider;
-use Livewire\Livewire;
 
+/**
+ * Service provider for Livewire components registration
+ * 
+ * This provider is loaded conditionally based on configuration
+ * to ensure Livewire integration is optional.
+ */
 class LivewireComponentsServiceProvider extends ServiceProvider
 {
+    /**
+     * Register services.
+     */
+    public function register(): void
+    {
+        // Register any Livewire-specific services here
+    }
+
+    /**
+     * Bootstrap services.
+     */
     public function boot(): void
     {
-        if (! class_exists(Livewire::class)) {
-            return;
+        // Load Livewire components when Livewire is available
+        if (class_exists(\Livewire\Livewire::class)) {
+            $this->app->register(LivewireServiceProvider::class);
         }
-
-        Livewire::component('lead-form', LeadForm::class);
     }
 }

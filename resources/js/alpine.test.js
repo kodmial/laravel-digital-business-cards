@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 describe('Alpine.js Modal State', () => {
     it('should have shared modal state structure', () => {

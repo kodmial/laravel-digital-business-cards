@@ -42,4 +42,14 @@ class AssetController extends Controller
 
         return __DIR__.'/../../../resources/'.$directory.'/'.$file;
     }
+
+    /**
+     * Returns the files served by this controller.
+     * 
+     * @return array<string> List of asset filenames
+     */
+    public static function getFiles(): array
+    {
+        return self::FILES;
+    }
 }

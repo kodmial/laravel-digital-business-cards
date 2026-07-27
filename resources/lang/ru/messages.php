@@ -21,7 +21,6 @@ return [
         'close' => 'Закрыть',
         'close_image' => 'Закрыть полноэкранное изображение',
         'submit_lead' => 'Поделиться контактом',
-        'submitting' => 'Отправка...',
         'confirm' => 'OK',
     ],
     'fields' => [

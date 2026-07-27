@@ -2,70 +2,96 @@
 
 namespace DigitalCardKit\Laravel\Livewire\Components;
 
-use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
 use DigitalCardKit\Laravel\Support\Config;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Str;
-use libphonenumber\NumberParseException;
-use libphonenumber\PhoneNumberUtil;
-use Livewire\Attributes\Locked;
+use DigitalCardKit\Laravel\Support\RateLimits;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
+use Throwable;
 
+/**
+ * Livewire component for lead form submission
+ * 
+ * Provides reactive form handling with real-time validation
+ * and loading states when use_livewire is enabled.
+ * 
+ * @property-read string $cardId The card slug identifier
+ * @property-read string $fullName The display name for the card
+ * @property-read string $buttonClass CSS classes for buttons
+ * @property-read array $leadData Form field data
+ * @property-read bool $consent Consent checkbox state
+ * @property-read bool $submitted Form submission state
+ * @property-read bool $sending Form sending state
+ */
 class LeadForm extends Component
 {
-    #[Locked]
-    public string $cardId;
-
-    #[Locked]
-    public bool $inline = false;
-
-    #[Locked]
-    public ?string $fullName = null;
-
-    #[Locked]
-    public ?string $buttonClass = null;
-
+    public string $cardId = '';
+    public string $fullName = '';
+    public string $buttonClass = '';
     public array $leadData = [];
-
     public bool $consent = false;
-
     public bool $submitted = false;
-
     public bool $sending = false;
 
-    private const NATIVE_KEYS = ['name', 'phone', 'email', 'company', 'comment'];
-
-    public function mount(string $cardId, bool $inline = false, ?string $fullName = null, ?string $buttonClass = null): void
+    /**
+     * Mount the component with card data.
+     * 
+     * @param string $cardId The card slug identifier
+     * @param string $fullName The display name for the card
+     * @param string $buttonClass CSS classes for buttons
+     */
+    public function mount(string $cardId, string $fullName, string $buttonClass): void
     {
         $this->cardId = $cardId;
-        $this->inline = $inline;
         $this->fullName = $fullName;
         $this->buttonClass = $buttonClass;
-        $this->leadData = $this->initializeLeadData();
+        
+        // Initialize lead data fields
+        $card = $this->getCardProperty();
+        foreach ($card->leadFields() as $field) {
+            $key = (string) $field['key'];
+            $this->leadData[$key] = '';
+        }
     }
 
-    public function getCardProperty()
+    /**
+     * Get the card model instance.
+     * 
+     * @return DigitalBusinessCard The published card instance
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    private function getCardProperty(): DigitalBusinessCard
     {
         $cardModel = Config::model('card');
+        
+        /** @var DigitalBusinessCard */
         return $cardModel::query()
-            ->where('id', $this->cardId)
+            ->where('slug', $this->cardId)
             ->where('is_published', true)
             ->firstOrFail();
     }
 
+    /**
+     * Get the lead fields from the card.
+     * 
+     * @return array Lead field definitions
+     */
     public function getLeadFieldsProperty(): array
     {
-        return $this->getCardProperty()->validatableLeadFields();
+        return $this->getCardProperty()->leadFields();
     }
 
+    /**
+     * Get validation rules for the form.
+     * 
+     * @return array<string, mixed[]> Validation rules keyed by field name
+     */
     public function rules(): array
     {
         $card = $this->getCardProperty();
         $rules = [];
-        $phoneUtil = PhoneNumberUtil::getInstance();
 
         foreach ($card->validatableLeadFields() as $field) {
             $fieldType = $field['type'] ?? 'text';
@@ -80,25 +106,7 @@ class LeadForm extends Component
             }
 
             if ($fieldType === 'tel') {
-                $fieldRules[] = static function (string $attribute, mixed $value, \Closure $fail) use ($phoneUtil): void {
-                    if (! is_string($value) || $value === '') {
-                        return;
-                    }
-
-                    $candidates = Config::phoneCandidateRegions();
-                    foreach ($candidates as $region) {
-                        try {
-                            $proto = $phoneUtil->parse($value, $region);
-                            if ($phoneUtil->isValidNumber($proto)) {
-                                return;
-                            }
-                        } catch (NumberParseException) {
-                            continue;
-                        }
-                    }
-
-                    $fail(__('The :attribute must be a valid phone number.'));
-                };
+                $fieldRules[] = 'regex:/^[\d\s\-\+\(\)]+$/';
             }
 
             $rules[(string) $field['key']] = $fieldRules;
@@ -111,66 +119,81 @@ class LeadForm extends Component
         return $rules;
     }
 
+    /**
+     * Submit the lead form.
+     */
     public function submit(): void
     {
         $this->sending = true;
+
+        // Rate limiting
+        $key = RateLimits::LEADS.'|'.$this->cardId.'|'.request()->ip();
+        if (RateLimiter::tooManyAttempts($key, 1)) {
+            $this->addError('error', __('Too many attempts. Please try again later.'));
+            $this->sending = false;
+            return;
+        }
+
+        RateLimiter::hit($key, 60);
 
         $validated = $this->validate();
 
         $lead = $this->createLead($validated);
 
-        event(new ContactExchangeCompleted($lead->id));
-
         $this->submitted = true;
         $this->sending = false;
 
-        Session::flash('card_lead_sent', true);
-        Session::flash('card_confirmation_sent', Config::get('notifications.send_confirmation', false));
-
-        // Dispatch event for Alpine.js to handle modal
+        // Dispatch event for Alpine.js to handle
         $this->dispatch('lead-submitted');
     }
 
-    protected function createLead(array $validated)
+    /**
+     * Create the lead record.
+     * 
+     * @param array $validated Validated form data
+     * @return DigitalBusinessCardLead The created lead instance
+     */
+    private function createLead(array $validated): DigitalBusinessCardLead
     {
-        $leadData = Arr::except($validated, ['consent']);
-
-        $attributes = array_merge(
-            array_combine(
-                self::NATIVE_KEYS,
-                array_map(static fn (string $key): mixed => $leadData[$key] ?? null, self::NATIVE_KEYS),
-            ),
-            [
-                'custom_data' => Arr::except($leadData, self::NATIVE_KEYS),
-                'consent_given' => (bool) $this->consent,
-                'source' => Str::limit((string) request()->header('Referer'), 255, ''),
-                'submitted_at' => now(),
-            ],
-        );
-
-        $leadModel = Config::model('lead');
-        $lead = $leadModel::query()->create($attributes);
         $card = $this->getCardProperty();
-        $lead->card()->associate($card);
-        $lead->save();
+        $leadModel = Config::model('lead');
 
-        return $lead;
-    }
+        $leadData = [
+            'digital_business_card_id' => $card->id,
+            'consent_given' => (bool) $this->consent,
+            'source' => 'livewire-form',
+        ];
 
-    protected function initializeLeadData(): array
-    {
-        $data = [];
-        foreach ($this->getLeadFieldsProperty() as $field) {
+        // Add dynamic field data
+        foreach ($card->leadFields() as $field) {
             $key = (string) $field['key'];
-            $data[$key] = '';
+            /** @var DigitalBusinessCardLead */
+            $leadModelInstance = new $leadModel();
+            $fillable = $leadModelInstance->getFillable();
+            if (in_array($key, $fillable, true)) {
+                $leadData[$key] = $validated[$key] ?? null;
+            } else {
+                $leadData['custom_data'][$key] = $validated[$key] ?? null;
+            }
         }
 
-        return $data;
+        /** @var DigitalBusinessCardLead */
+        return $leadModel::query()->create($leadData);
     }
 
-    public function render()
+    /**
+     * Render the component.
+     * 
+     * @return View The rendered view
+     */
+    public function render(): View
     {
-        return view('digital-business-cards::livewire.lead-form')
-            ->with('card', $this->getCardProperty());
+        $card = $this->getCardProperty();
+        
+        return view('digital-business-cards::livewire.lead-form', [
+            'card' => $card,
+            'fullName' => $this->fullName,
+            'buttonClass' => $this->buttonClass,
+        ]);
     }
 }

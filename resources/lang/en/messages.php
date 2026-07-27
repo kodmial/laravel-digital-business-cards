@@ -21,7 +21,6 @@ return [
         'close' => 'Close',
         'close_image' => 'Close the full-screen image',
         'submit_lead' => 'Share my details',
-        'submitting' => 'Submitting...',
         'confirm' => 'OK',
     ],
     'fields' => [

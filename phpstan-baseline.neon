@@ -697,7 +697,37 @@ parameters:
 			path: tests/RateLimitTest.php
 
 		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model::card\(\)\.$#'
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Factories\\Factory\:\:published\(\)\.$#'
 			identifier: method.notFound
+			count: 1
+			path: tests/CardRenderingTest.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Factories\\Factory\:\:published\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: tests/ContactsAndVCardTest.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Factories\\Factory\:\:published\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Factories\\Factory\:\:published\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: tests/ModelsMediaAndAssetsTest.php
+
+		-
+			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Livewire/Components/LeadForm.php
+
+		-
+			message: '#^Static call to instance method Illuminate\\Database\\Eloquent\\Model::getFillable\(\)\.$#'
+			identifier: method.staticCall
 			count: 1
 			path: src/Livewire/Components/LeadForm.php

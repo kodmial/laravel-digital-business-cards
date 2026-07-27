@@ -33,12 +33,6 @@ export function initDigitalBusinessCard(root = document.querySelector('[data-dig
     };
 
     const open = (name) => {
-        // If Alpine.js is available and configured, use it instead
-        if (globalThis.Alpine && globalThis.Alpine.store && globalThis.Alpine.store('events')) {
-            globalThis.Alpine.store('events').openModal(name);
-            return;
-        }
-
         const dialog = document.querySelector(`[data-modal="${name}"]`);
 
         if (!dialog) {
@@ -59,12 +53,6 @@ export function initDigitalBusinessCard(root = document.querySelector('[data-dig
     };
 
     const close = () => {
-        // If Alpine.js is available and configured, use it instead
-        if (globalThis.Alpine && globalThis.Alpine.store && globalThis.Alpine.store('events')) {
-            globalThis.Alpine.store('events').closeModal();
-            return;
-        }
-
         document.querySelectorAll('[data-modal]').forEach((modal) => {
             modal.hidden = true;
         });

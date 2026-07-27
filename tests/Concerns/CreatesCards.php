@@ -14,8 +14,9 @@ use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 trait CreatesCards
 {
     /** @param  array<string, mixed>  $attributes */
-    protected function createCard(array $attributes = [])
+    protected function createCard(array $attributes = []): DigitalBusinessCard
     {
+        /** @var DigitalBusinessCard */
         return DigitalBusinessCard::factory()
             ->state(['is_published' => true])
             ->create(array_merge([
