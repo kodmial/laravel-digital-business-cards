@@ -7,7 +7,7 @@
 
 <h2 id="{{ $headingId }}">{{ $title }}</h2>
 <p class="digital-card-exchange-copy">{{ $description }}</p>
-<form wire:submit="submit" class="digital-card-form" @if($inline) data-inline-lead-form @endif>
+<form wire:submit="submit" class="digital-card-form" novalidate @if($inline) data-inline-lead-form @endif>
     <label class="digital-card-honeypot" aria-hidden="true" inert>
         <span>Website</span>
         <input wire:model="website" type="text" name="website" tabindex="-1" autocomplete="off">

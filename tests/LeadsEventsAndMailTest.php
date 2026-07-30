@@ -230,6 +230,7 @@ class LeadsEventsAndMailTest extends TestCase
         $this->get('/card/example-card')
             ->assertOk()
             ->assertSee('wire:submit="submit"', false)
+            ->assertSee('novalidate', false)
             ->assertSee('wire:model="fields.name"', false)
             ->assertSee('wire:loading.attr="disabled"', false)
             ->assertSee('x-data=', false)
