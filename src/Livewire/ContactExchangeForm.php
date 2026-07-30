@@ -9,13 +9,18 @@ use DigitalCardKit\Laravel\Support\LeadFormData;
 use DigitalCardKit\Laravel\Support\RateLimits;
 use DigitalCardKit\Laravel\Support\ResolvesModels;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\MessageBag;
+use Illuminate\Support\ViewErrorBag;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
-use function Livewire\store;
-
+/**
+ * Livewire-backed contact exchange form for both inline and modal rendering.
+ *
+ * Alpine owns only modal presentation; validation, submission, rate limiting,
+ * and success state remain server-side in this component.
+ */
 class ContactExchangeForm extends Component
 {
     use ResolvesModels;
@@ -29,7 +34,10 @@ class ContactExchangeForm extends Component
 
     public bool $confirmationSent = false;
 
+    public string $website = '';
+
     /** @var array<string, array<int, string>> */
+    #[Locked]
     public array $validationErrors = [];
 
     #[Locked]
@@ -38,12 +46,16 @@ class ContactExchangeForm extends Component
     #[Locked]
     public bool $inline = false;
 
+    #[Locked]
+    public int $formInitializedAt;
+
     public function mount(DigitalBusinessCard $card, bool $inline = false): void
     {
         abort_unless($card->getAttribute('lead_form_enabled'), 404);
 
         $this->cardRouteKey = (string) $card->getRouteKey();
         $this->inline = $inline;
+        $this->formInitializedAt = now()->timestamp;
         $this->fields = array_fill_keys(
             array_column($card->validatableLeadFields(), 'key'),
             '',
@@ -55,26 +67,26 @@ class ContactExchangeForm extends Component
         $card = $this->card();
         RateLimits::ensureLeadSubmissionIsAllowed(request(), (string) $card->getRouteKey());
 
-        $validationData = ['fields' => $this->fields];
-        if ($card->getAttribute('lead_consent_required') || $this->consent !== null) {
-            $validationData['consent'] = $this->consent;
+        if ($this->looksLikeSpam()) {
+            $this->recordValidationErrors(new MessageBag([
+                'form' => [__('digital-business-cards::messages.lead.submission_rejected')],
+            ]));
+
+            return;
         }
 
-        $validator = Validator::make(
-            $validationData,
-            $this->rules(),
-        );
-
-        if ($validator->fails()) {
-            $this->validationErrors = $validator->errors()->toArray();
-            $this->setErrorBag($validator->errors());
+        try {
+            $validated = $this->validate(
+                $this->validationRules($card),
+                ['website.prohibited' => __('digital-business-cards::messages.lead.submission_rejected')],
+            );
+        } catch (ValidationException $exception) {
+            $this->recordValidationErrors($exception->validator->errors());
 
             return;
         }
 
         $this->validationErrors = [];
-        $this->resetErrorBag();
-        $validated = $validator->validated();
         $lead = $submission->submit(
             request(),
             $card,
@@ -89,6 +101,7 @@ class ContactExchangeForm extends Component
         $this->confirmationSent = (bool) $card->getAttribute('lead_send_confirmation')
             && filter_var($lead->getAttribute('email'), FILTER_VALIDATE_EMAIL) !== false;
         $this->reset('fields', 'consent');
+        $this->formInitializedAt = now()->timestamp;
         $this->fields = array_fill_keys(
             array_column($card->validatableLeadFields(), 'key'),
             '',
@@ -115,41 +128,72 @@ class ContactExchangeForm extends Component
             },
             'privacyUrl' => trim((string) $card->getAttribute('privacy_url')) ?: Config::privacyUrl(),
             'successModal' => 'success-'.$this->getId(),
+            'errors' => (new ViewErrorBag)->put('default', new MessageBag($this->validationErrors)),
         ]);
     }
 
+    /** @return array<string, array<int, string|\Closure>> */
+    private function validationRules(DigitalBusinessCard $card): array
+    {
+        $rules = [];
+
+        if (Config::get('spam_protection.enabled', true)) {
+            $rules['website'] = ['prohibited'];
+        }
+
+        foreach (LeadFormData::rules($card) as $key => $fieldRules) {
+            if ($key === 'consent' && ! $card->getAttribute('lead_consent_required') && $this->consent === null) {
+                continue;
+            }
+
+            $rules[$key === 'consent' ? $key : 'fields.'.$key] = $fieldRules;
+        }
+
+        return $rules;
+    }
+
+    private function wasSubmittedTooQuickly(): bool
+    {
+        if (! Config::get('spam_protection.enabled', true)) {
+            return false;
+        }
+
+        $minimumFillSeconds = max(0, (int) Config::get('spam_protection.minimum_fill_seconds', 2));
+
+        return now()->timestamp < $this->formInitializedAt + $minimumFillSeconds;
+    }
+
+    private function looksLikeSpam(): bool
+    {
+        return Config::get('spam_protection.enabled', true)
+            && ($this->website !== '' || $this->wasSubmittedTooQuickly());
+    }
+
+    /**
+     * Return the component validation errors.
+     *
+     * Livewire 4.3 can seed a package component's error bag with null before
+     * its initial Testbench render. Normalize that value through Livewire's
+     * public API without depending on its internal component store.
+     */
     public function getErrorBag(): MessageBag
     {
-        $errorBag = store($this)->get('errorBag');
+        $errorBag = parent::getErrorBag();
 
         if ($errorBag instanceof MessageBag) {
             return $errorBag;
         }
 
         $errorBag = new MessageBag;
-        store($this)->set('errorBag', $errorBag);
+        $this->setErrorBag($errorBag);
 
         return $errorBag;
     }
 
-    public function setErrorBag($bag): MessageBag
+    private function recordValidationErrors(MessageBag $errors): void
     {
-        $errorBag = $bag instanceof MessageBag ? $bag : new MessageBag($bag);
-        store($this)->set('errorBag', $errorBag);
-
-        return $errorBag;
-    }
-
-    /** @return array<string, array<int, string|\Closure>> */
-    protected function rules(): array
-    {
-        $rules = [];
-
-        foreach (LeadFormData::rules($this->card()) as $key => $fieldRules) {
-            $rules[$key === 'consent' ? $key : 'fields.'.$key] = $fieldRules;
-        }
-
-        return $rules;
+        $this->validationErrors = $errors->toArray();
+        $this->setErrorBag($errors);
     }
 
     private function card(): DigitalBusinessCard

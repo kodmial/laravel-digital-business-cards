@@ -17,6 +17,10 @@ use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
  * visitors out of an unrelated one. These limiters key on the card as well,
  * and keep a wider per-address cap so spreading requests across many cards is
  * still bounded.
+ *
+ * Livewire submissions update both budgets while holding a Laravel atomic
+ * cache lock. Deployments with multiple application servers must therefore
+ * use the same central, lock-capable cache backend on every server.
  */
 final class RateLimits
 {

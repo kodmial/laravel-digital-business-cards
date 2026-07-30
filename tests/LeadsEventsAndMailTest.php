@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
@@ -254,9 +255,8 @@ class LeadsEventsAndMailTest extends TestCase
             ->set('fields.email', 'invalid')
             ->set('consent', true)
             ->call('submit')
+            ->assertSee('valid email address')
             ->assertSet('submitted', false);
-
-        $this->assertArrayHasKey('fields.email', $component->get('validationErrors'));
 
         $component->set('fields.email', 'visitor@example.test')
             ->set('fields.telegram', '@visitor')
@@ -287,9 +287,8 @@ class LeadsEventsAndMailTest extends TestCase
             ->set('fields.name', 'Visitor')
             ->set('fields.phone', '+1 202 555 0123')
             ->call('submit')
+            ->assertSee('consent field is required')
             ->assertSet('submitted', false);
-
-        $this->assertArrayHasKey('consent', $component->get('validationErrors'));
 
         $card->update(['lead_form_enabled' => false]);
 
@@ -305,9 +304,8 @@ class LeadsEventsAndMailTest extends TestCase
             ->set('fields.phone', '+1 202 555 0123')
             ->set('consent', false)
             ->call('submit')
+            ->assertSee('consent field must be accepted')
             ->assertSet('submitted', false);
-
-        $this->assertArrayHasKey('consent', $component->get('validationErrors'));
         $this->assertSame(0, $card->leads()->count());
     }
 
@@ -321,12 +319,55 @@ class LeadsEventsAndMailTest extends TestCase
             ->set('fields.phone', 'not-a-phone-number')
             ->set('consent', true)
             ->call('submit')
+            ->assertSee('Поле fields.phone должно содержать корректный номер телефона.')
+            ->assertSet('submitted', false);
+    }
+
+    public function test_livewire_rejects_honeypot_submissions_without_creating_a_lead(): void
+    {
+        $card = $this->createCard(['lead_consent_required' => false]);
+
+        Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->set('fields.name', 'Spam bot')
+            ->set('fields.phone', '+1 202 555 0123')
+            ->set('website', 'https://spam.example')
+            ->call('submit')
+            ->assertSee('Unable to submit the form')
             ->assertSet('submitted', false);
 
-        $this->assertSame(
-            ['Поле fields.phone должно содержать корректный номер телефона.'],
-            $component->get('validationErrors')['fields.phone'],
-        );
+        $this->assertSame(0, $card->leads()->count());
+    }
+
+    public function test_livewire_rejects_submissions_that_are_faster_than_a_human_can_fill_the_form(): void
+    {
+        config(['digital-business-cards.spam_protection.minimum_fill_seconds' => 3]);
+        $card = $this->createCard(['lead_consent_required' => false]);
+        $component = Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->set('fields.name', 'Visitor')
+            ->set('fields.phone', '+1 202 555 0123')
+            ->call('submit')
+            ->assertSee('Unable to submit the form')
+            ->assertSet('submitted', false);
+
+        $this->assertSame(0, $card->leads()->count());
+
+        $this->travel(3)->seconds();
+
+        $component->call('submit')
+            ->assertHasNoErrors()
+            ->assertSet('submitted', true);
+
+        $this->assertSame(1, $card->leads()->count());
+    }
+
+    public function test_livewire_prevents_clients_from_tampering_with_the_spam_timer(): void
+    {
+        $card = $this->createCard();
+
+        $this->expectException(CannotUpdateLockedPropertyException::class);
+
+        Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->set('formInitializedAt', 0);
     }
 
     public function test_livewire_submissions_use_the_existing_per_card_rate_limit(): void

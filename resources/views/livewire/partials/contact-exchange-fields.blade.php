@@ -8,6 +8,10 @@
 <h2 id="{{ $headingId }}">{{ $title }}</h2>
 <p class="digital-card-exchange-copy">{{ $description }}</p>
 <form wire:submit="submit" class="digital-card-form" @if($inline) data-inline-lead-form @endif>
+    <label class="digital-card-honeypot" aria-hidden="true" inert>
+        <span>Website</span>
+        <input wire:model="website" type="text" name="website" tabindex="-1" autocomplete="off">
+    </label>
     @foreach ($fieldDefinitions as $field)
         @php($key = $field['key'])
         <label wire:key="lead-field-{{ $key }}">
@@ -17,7 +21,9 @@
             @else
                 <input wire:model="fields.{{ $key }}" type="{{ $field['type'] ?? 'text' }}" name="{{ $key }}" @required($field['required'] ?? false)>
             @endif
-            @if($message = data_get($validationErrors, 'fields.'.$key.'.0'))<em>{{ $message }}</em>@endif
+            @error('fields.'.$key)
+                <em>{{ $message }}</em>
+            @enderror
         </label>
     @endforeach
     <label class="digital-card-consent">
@@ -32,7 +38,12 @@
             @endif
         </span>
     </label>
-    @if($message = data_get($validationErrors, 'consent.0'))<em>{{ $message }}</em>@endif
+    @error('consent')
+        <em>{{ $message }}</em>
+    @enderror
+    @error('form')
+        <em>{{ $message }}</em>
+    @enderror
     <button type="submit" class="digital-card-submit {{ $buttonClass }}" wire:loading.attr="disabled" wire:target="submit">
         <span wire:loading.remove wire:target="submit">{{ __('digital-business-cards::messages.actions.submit_lead') }}</span>
         <span wire:loading wire:target="submit">{{ __('digital-business-cards::messages.actions.submitting_lead') }}</span>

@@ -8,11 +8,21 @@ use Illuminate\Support\Str;
 use libphonenumber\NumberParseException;
 use libphonenumber\PhoneNumberUtil;
 
+/**
+ * Builds validation rules and persistence attributes for configurable leads.
+ *
+ * Known lead fields remain top-level columns while all configured custom
+ * fields retain the package's existing custom_data representation.
+ */
 final class LeadFormData
 {
     private const NATIVE_KEYS = ['name', 'phone', 'email', 'company', 'comment'];
 
-    /** @return array<string, array<int, string|\Closure>> */
+    /**
+     * Build rules for the card's current dynamic lead fields.
+     *
+     * @return array<string, array<int, string|\Closure>>
+     */
     public static function rules(DigitalBusinessCard $card): array
     {
         $rules = [];
@@ -74,6 +84,8 @@ final class LeadFormData
     }
 
     /**
+     * Convert validated form values to lead model attributes.
+     *
      * @param  array<string, mixed>  $validated
      * @return array<string, mixed>
      */

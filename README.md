@@ -80,6 +80,7 @@ Important settings in `config/digital-business-cards.php`:
 | `route_middleware` | Middleware for public card routes |
 | `lead_middleware` and `event_middleware` | Middleware for the write endpoints |
 | `rate_limits` | Attempts per minute, per card and per client address |
+| `spam_protection` | Honeypot and minimum form-fill time for Livewire leads |
 | `storage_disk` and `media_directories` | Local, S3, or CDN-backed media storage |
 | `privacy_url` | Optional global privacy-policy URL used by consent forms |
 | `default_theme` | Neutral default background, accent, and text colors |
@@ -195,6 +196,12 @@ requests across many cards does not lift the ceiling. Tune the numbers under
 `event_middleware` is additive and must not replace the configured throttle
 middleware—the named `Support\RateLimits` limiters keyed by card and client
 address are required for security.
+
+Livewire lead forms add a server-side honeypot and a protected minimum fill
+time under `spam_protection`. The atomic update of per-card and per-address
+budgets requires a Laravel cache store that supports atomic locks. On
+multi-server deployments, every server must use the same central lock-capable
+cache backend, such as Redis.
 
 ## Localization
 

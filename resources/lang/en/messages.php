@@ -52,6 +52,7 @@ return [
         'consent_policy' => 'in accordance with the :link',
         'privacy_policy' => 'privacy policy',
         'invalid_phone' => 'The :attribute field must be a valid phone number.',
+        'submission_rejected' => 'Unable to submit the form. Please try again.',
         'success_title' => 'Your contact details have been sent',
         'success_confirmed' => 'The contact details of “:name” have been emailed to you',
         'success_unconfirmed' => '“:name” has received your contact details',

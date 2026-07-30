@@ -52,6 +52,7 @@ return [
         'consent_policy' => 'согласно :link',
         'privacy_policy' => 'политике конфиденциальности',
         'invalid_phone' => 'Поле :attribute должно содержать корректный номер телефона.',
+        'submission_rejected' => 'Не удалось отправить форму. Попробуйте ещё раз.',
         'success_title' => 'Ваши контакты успешно отправлены',
         'success_confirmed' => 'На вашу электронную почту отправлены контакты «:name»',
         'success_unconfirmed' => '«:name» получил(а) ваши контактные данные',
