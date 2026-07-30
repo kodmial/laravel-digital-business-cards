@@ -14,8 +14,10 @@ use DigitalCardKit\Laravel\Notifications\LaravelMailNotificationSender;
 use DigitalCardKit\Laravel\Notifications\NotificationSender;
 use DigitalCardKit\Laravel\Services\EventRecorder;
 use DigitalCardKit\Laravel\Services\LeadSubmission;
+use DigitalCardKit\Laravel\Support\Config;
 use DigitalCardKit\Laravel\Support\RateLimits;
 use DigitalCardKit\Laravel\Tests\Concerns\CreatesCards;
+use DigitalCardKit\Laravel\Tests\Fixtures\RecordLeadMiddleware;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Http\Request;
@@ -233,10 +235,34 @@ class LeadsEventsAndMailTest extends TestCase
             ->assertSee('novalidate', false)
             ->assertSee('wire:model="fields.name"', false)
             ->assertSee('wire:loading.attr="disabled"', false)
+            ->assertSee('data-track="vcard"', false)
             ->assertSee('x-data=', false)
             ->assertSee('x-trap.inert.noscroll', false)
             ->assertSee('x-on:contact-exchange-succeeded.window', false)
             ->assertDontSee('action="/card/example-card/contacts"', false);
+    }
+
+    public function test_legacy_validation_errors_and_old_input_are_restored_in_livewire_forms(): void
+    {
+        $this->createCard(['lead_form_fields' => [
+            ['key' => 'name', 'label' => 'Name', 'type' => 'text', 'required' => true],
+            ['key' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true],
+        ]]);
+
+        $this->from('/card/example-card')
+            ->post('/card/example-card/contacts', [
+                'name' => 'Remembered Visitor',
+                'email' => 'invalid-email',
+                'consent' => '1',
+            ])
+            ->assertRedirect('/card/example-card')
+            ->assertSessionHasErrors('email');
+
+        $this->get('/card/example-card')
+            ->assertOk()
+            ->assertSee('Remembered Visitor')
+            ->assertSee('The email field must be a valid email address.')
+            ->assertSee("modal: 'exchange'", false);
     }
 
     public function test_livewire_validates_dynamic_fields_and_preserves_the_submission_pipeline(): void
@@ -389,6 +415,68 @@ class LeadsEventsAndMailTest extends TestCase
             ->set('fields.phone', '+1 202 555 0123')
             ->call('submit')
             ->assertStatus(429);
+
+        $this->assertSame(2, $card->leads()->count());
+    }
+
+    public function test_livewire_submissions_run_the_configured_lead_middleware(): void
+    {
+        RecordLeadMiddleware::$cards = [];
+        RecordLeadMiddleware::$routeNames = [];
+        RecordLeadMiddleware::$deny = false;
+        config(['digital-business-cards.lead_middleware' => [
+            RecordLeadMiddleware::class,
+            'throttle:'.RateLimits::LEADS,
+        ]]);
+        $card = $this->createCard(['lead_consent_required' => false]);
+
+        Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->set('fields.name', 'Visitor')
+            ->set('fields.phone', '+1 202 555 0123')
+            ->call('submit')
+            ->assertSet('submitted', true);
+
+        $this->assertSame(['example-card'], RecordLeadMiddleware::$cards);
+        $this->assertSame([Config::routeName('leads.store')], RecordLeadMiddleware::$routeNames);
+    }
+
+    public function test_configured_lead_middleware_can_reject_a_livewire_submission(): void
+    {
+        RecordLeadMiddleware::$cards = [];
+        RecordLeadMiddleware::$routeNames = [];
+        RecordLeadMiddleware::$deny = true;
+        config(['digital-business-cards.lead_middleware' => [RecordLeadMiddleware::class]]);
+        $card = $this->createCard(['lead_consent_required' => false]);
+
+        Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->set('fields.name', 'Rejected')
+            ->set('fields.phone', '+1 202 555 0123')
+            ->call('submit')
+            ->assertStatus(403);
+
+        $this->assertSame(0, $card->leads()->count());
+    }
+
+    public function test_legacy_and_livewire_submissions_share_one_rate_limit_budget(): void
+    {
+        config(['digital-business-cards.rate_limits.leads' => ['per_card' => 2, 'per_ip' => 3]]);
+        $card = $this->createCard(['lead_consent_required' => false]);
+
+        $this->post('/card/example-card/contacts', [
+            'name' => 'Legacy',
+            'phone' => '+1 202 555 0123',
+        ])->assertRedirect();
+
+        Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->set('fields.name', 'Livewire')
+            ->set('fields.phone', '+1 202 555 0123')
+            ->call('submit')
+            ->assertSet('submitted', true);
+
+        $this->post('/card/example-card/contacts', [
+            'name' => 'Over limit',
+            'phone' => '+1 202 555 0123',
+        ])->assertStatus(429);
 
         $this->assertSame(2, $card->leads()->count());
     }

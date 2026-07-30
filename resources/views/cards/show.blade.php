@@ -64,7 +64,7 @@
             <h1>{{ $fullName }}</h1>@if ($card->job_title)<p class="digital-card-title">{{ $card->job_title }}</p>@endif @if ($card->company_name)<p class="digital-card-company">{{ $card->company_name }}</p>@endif @if ($card->headline)<p class="digital-card-headline">{{ $card->headline }}</p>@endif
         </div>
         <div class="digital-card-primary-actions">
-            <button type="button" class="digital-card-save {{ $buttonClass }}" x-on:click="open('save')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>{{ $t('actions.save_contact') }}</button>
+            <button type="button" class="digital-card-save {{ $buttonClass }}" data-track="vcard" x-on:click="open('save')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>{{ $t('actions.save_contact') }}</button>
         </div>
     </section>
 

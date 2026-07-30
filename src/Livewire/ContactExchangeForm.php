@@ -9,6 +9,12 @@ use DigitalCardKit\Laravel\Support\LeadFormData;
 use DigitalCardKit\Laravel\Support\RateLimits;
 use DigitalCardKit\Laravel\Support\ResolvesModels;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Pipeline\Pipeline;
+use Illuminate\Routing\Route;
+use Illuminate\Routing\Router;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
 use Illuminate\Validation\ValidationException;
@@ -53,20 +59,67 @@ class ContactExchangeForm extends Component
     {
         abort_unless($card->getAttribute('lead_form_enabled'), 404);
 
+        $fieldKeys = array_column($card->validatableLeadFields(), 'key');
         $this->cardRouteKey = (string) $card->getRouteKey();
         $this->inline = $inline;
         $this->formInitializedAt = now()->timestamp;
-        $this->fields = array_fill_keys(
-            array_column($card->validatableLeadFields(), 'key'),
-            '',
-        );
+        $this->fields = array_fill_keys($fieldKeys, '');
+        $this->restoreLegacySubmission($fieldKeys);
     }
 
-    public function submit(LeadSubmission $submission): void
+    public function submit(LeadSubmission $submission, Pipeline $pipeline, Router $router): void
     {
         $card = $this->card();
-        RateLimits::ensureLeadSubmissionIsAllowed(request(), (string) $card->getRouteKey());
+        $request = request();
+        $originalRouteResolver = $request->getRouteResolver();
+        $leadRoute = $router->getRoutes()->getByName(Config::routeName('leads.store'));
 
+        throw_unless($leadRoute instanceof Route, new \LogicException('The contact exchange route is not registered.'));
+
+        $leadRoute = clone $leadRoute;
+        $leadRoute->bind(Request::create(
+            route(Config::routeName('leads.store'), $card, false),
+            'POST',
+        ));
+        $leadRoute->setParameter('card', (string) $card->getRouteKey());
+        $request->setRouteResolver(static fn (): Route => $leadRoute);
+        $submissionReached = false;
+
+        try {
+            $response = $pipeline
+                ->send($request)
+                ->through($router->resolveMiddleware(Config::middleware(
+                    'lead_middleware',
+                    ['throttle:'.RateLimits::LEADS],
+                )))
+                ->then(function (Request $request) use ($card, $submission, &$submissionReached) {
+                    $submissionReached = true;
+                    $this->performSubmission($submission, $request, $card);
+
+                    return response()->noContent();
+                });
+        } finally {
+            $request->setRouteResolver($originalRouteResolver);
+        }
+
+        if ($submissionReached) {
+            return;
+        }
+
+        if ($response instanceof RedirectResponse) {
+            $this->redirect($response->getTargetUrl());
+
+            return;
+        }
+
+        throw new HttpResponseException($response);
+    }
+
+    private function performSubmission(
+        LeadSubmission $submission,
+        Request $request,
+        DigitalBusinessCard $card,
+    ): void {
         if ($this->looksLikeSpam()) {
             $this->recordValidationErrors(new MessageBag([
                 'form' => [__('digital-business-cards::messages.lead.submission_rejected')],
@@ -88,12 +141,12 @@ class ContactExchangeForm extends Component
 
         $this->validationErrors = [];
         $lead = $submission->submit(
-            request(),
+            $request,
             $card,
             LeadFormData::attributes(
                 $validated['fields'],
                 (bool) ($validated['consent'] ?? false),
-                request()->header('Referer'),
+                $request->header('Referer'),
             ),
         );
 
@@ -132,6 +185,27 @@ class ContactExchangeForm extends Component
         ]);
     }
 
+    /**
+     * Return the component validation errors.
+     *
+     * Livewire 4.3 can seed a package component's error bag with null before
+     * its initial Testbench render. Normalize that value through Livewire's
+     * public API without depending on its internal component store.
+     */
+    public function getErrorBag(): MessageBag
+    {
+        $errorBag = parent::getErrorBag();
+
+        if ($errorBag instanceof MessageBag) {
+            return $errorBag;
+        }
+
+        $errorBag = new MessageBag;
+        $this->setErrorBag($errorBag);
+
+        return $errorBag;
+    }
+
     /** @return array<string, array<int, string|\Closure>> */
     private function validationRules(DigitalBusinessCard $card): array
     {
@@ -152,6 +226,41 @@ class ContactExchangeForm extends Component
         return $rules;
     }
 
+    /** @param  array<int, string>  $fieldKeys */
+    private function restoreLegacySubmission(array $fieldKeys): void
+    {
+        $oldInput = session()->getOldInput();
+
+        foreach ($fieldKeys as $key) {
+            if (array_key_exists($key, $oldInput)) {
+                $value = $oldInput[$key];
+                $this->fields[$key] = is_scalar($value) ? (string) $value : '';
+            }
+        }
+
+        if (array_key_exists('consent', $oldInput)) {
+            $this->consent = filter_var($oldInput['consent'], FILTER_VALIDATE_BOOL);
+        }
+
+        $errors = session('errors');
+
+        if (! $errors instanceof ViewErrorBag) {
+            return;
+        }
+
+        $legacyErrors = $errors->getBag('default');
+
+        foreach ($fieldKeys as $key) {
+            if ($legacyErrors->has($key)) {
+                $this->validationErrors['fields.'.$key] = $legacyErrors->get($key);
+            }
+        }
+
+        if ($legacyErrors->has('consent')) {
+            $this->validationErrors['consent'] = $legacyErrors->get('consent');
+        }
+    }
+
     private function wasSubmittedTooQuickly(): bool
     {
         if (! Config::get('spam_protection.enabled', true)) {
@@ -167,27 +276,6 @@ class ContactExchangeForm extends Component
     {
         return Config::get('spam_protection.enabled', true)
             && ($this->website !== '' || $this->wasSubmittedTooQuickly());
-    }
-
-    /**
-     * Return the component validation errors.
-     *
-     * Livewire 4.3 can seed a package component's error bag with null before
-     * its initial Testbench render. Normalize that value through Livewire's
-     * public API without depending on its internal component store.
-     */
-    public function getErrorBag(): MessageBag
-    {
-        $errorBag = parent::getErrorBag();
-
-        if ($errorBag instanceof MessageBag) {
-            return $errorBag;
-        }
-
-        $errorBag = new MessageBag;
-        $this->setErrorBag($errorBag);
-
-        return $errorBag;
     }
 
     private function recordValidationErrors(MessageBag $errors): void

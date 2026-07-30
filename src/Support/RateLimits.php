@@ -3,6 +3,7 @@
 namespace DigitalCardKit\Laravel\Support;
 
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Cache\RateLimiting\Unlimited;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -18,9 +19,10 @@ use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
  * and keep a wider per-address cap so spreading requests across many cards is
  * still bounded.
  *
- * Livewire submissions update both budgets while holding a Laravel atomic
- * cache lock. Deployments with multiple application servers must therefore
- * use the same central, lock-capable cache backend on every server.
+ * Lead submissions update both budgets while holding a Laravel atomic cache
+ * lock, regardless of whether they arrive through Livewire or the legacy POST
+ * endpoint. Multi-server deployments must use the same central, lock-capable
+ * cache backend on every server.
  */
 final class RateLimits
 {
@@ -35,9 +37,13 @@ final class RateLimits
 
     public static function register(): void
     {
-        foreach ([self::LEADS => 'leads', self::EVENTS => 'events'] as $name => $key) {
-            RateLimiter::for($name, static fn (Request $request): array => self::limits($key, $request));
-        }
+        RateLimiter::for(self::LEADS, static function (Request $request): Unlimited {
+            self::ensureLeadSubmissionIsAllowed($request, (string) $request->route('card'));
+
+            return Limit::none();
+        });
+
+        RateLimiter::for(self::EVENTS, static fn (Request $request): array => self::limits('events', $request));
     }
 
     public static function ensureLeadSubmissionIsAllowed(Request $request, string $card): void
