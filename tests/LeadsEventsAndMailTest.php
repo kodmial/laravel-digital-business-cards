@@ -313,6 +313,7 @@ class LeadsEventsAndMailTest extends TestCase
 
     public function test_livewire_uses_the_package_translation_for_invalid_phone_numbers(): void
     {
+        app()->setLocale('ru');
         $card = $this->createCard();
 
         $component = Livewire::test(ContactExchangeForm::class, ['card' => $card])
@@ -323,7 +324,7 @@ class LeadsEventsAndMailTest extends TestCase
             ->assertSet('submitted', false);
 
         $this->assertSame(
-            ['The fields.phone field must be a valid phone number.'],
+            ['Поле fields.phone должно содержать корректный номер телефона.'],
             $component->get('validationErrors')['fields.phone'],
         );
     }
