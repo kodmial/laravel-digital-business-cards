@@ -23,7 +23,7 @@ class ContactExchangeForm extends Component
     /** @var array<string, mixed> */
     public array $fields = [];
 
-    public bool $consent = false;
+    public ?bool $consent = null;
 
     public bool $submitted = false;
 
@@ -56,7 +56,7 @@ class ContactExchangeForm extends Component
         RateLimits::ensureLeadSubmissionIsAllowed(request(), (string) $card->getRouteKey());
 
         $validationData = ['fields' => $this->fields];
-        if ($card->getAttribute('lead_consent_required') || $this->consent) {
+        if ($card->getAttribute('lead_consent_required') || $this->consent !== null) {
             $validationData['consent'] = $this->consent;
         }
 

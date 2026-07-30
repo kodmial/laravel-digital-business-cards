@@ -57,7 +57,9 @@ final class LeadFormData
                         return;
                     }
 
-                    $fail(__('validation.phone', ['attribute' => $attribute]));
+                    $fail(__('digital-business-cards::messages.lead.invalid_phone', [
+                        'attribute' => $attribute,
+                    ]));
                 };
             }
 

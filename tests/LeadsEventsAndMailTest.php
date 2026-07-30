@@ -8,15 +8,22 @@ use DigitalCardKit\Laravel\Listeners\SendContactExchangeNotifications;
 use DigitalCardKit\Laravel\Livewire\ContactExchangeForm;
 use DigitalCardKit\Laravel\Mail\ContactExchangeConfirmation;
 use DigitalCardKit\Laravel\Mail\ContactExchangeReceived;
+use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardBlock;
 use DigitalCardKit\Laravel\Notifications\LaravelMailNotificationSender;
 use DigitalCardKit\Laravel\Notifications\NotificationSender;
+use DigitalCardKit\Laravel\Services\EventRecorder;
+use DigitalCardKit\Laravel\Services\LeadSubmission;
+use DigitalCardKit\Laravel\Support\RateLimits;
 use DigitalCardKit\Laravel\Tests\Concerns\CreatesCards;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 class LeadsEventsAndMailTest extends TestCase
 {
@@ -289,6 +296,38 @@ class LeadsEventsAndMailTest extends TestCase
         Livewire::test(ContactExchangeForm::class, ['card' => $card])->assertNotFound();
     }
 
+    public function test_livewire_rejects_explicitly_refused_optional_consent(): void
+    {
+        $card = $this->createCard(['lead_consent_required' => false]);
+
+        $component = Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->set('fields.name', 'Visitor')
+            ->set('fields.phone', '+1 202 555 0123')
+            ->set('consent', false)
+            ->call('submit')
+            ->assertSet('submitted', false);
+
+        $this->assertArrayHasKey('consent', $component->get('validationErrors'));
+        $this->assertSame(0, $card->leads()->count());
+    }
+
+    public function test_livewire_uses_the_package_translation_for_invalid_phone_numbers(): void
+    {
+        $card = $this->createCard();
+
+        $component = Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->set('fields.name', 'Visitor')
+            ->set('fields.phone', 'not-a-phone-number')
+            ->set('consent', true)
+            ->call('submit')
+            ->assertSet('submitted', false);
+
+        $this->assertSame(
+            ['The fields.phone field must be a valid phone number.'],
+            $component->get('validationErrors')['fields.phone'],
+        );
+    }
+
     public function test_livewire_submissions_use_the_existing_per_card_rate_limit(): void
     {
         config(['digital-business-cards.rate_limits.leads' => ['per_card' => 2, 'per_ip' => 3]]);
@@ -309,6 +348,50 @@ class LeadsEventsAndMailTest extends TestCase
             ->assertStatus(429);
 
         $this->assertSame(2, $card->leads()->count());
+    }
+
+    public function test_livewire_rate_limit_reservation_is_serialized_per_address(): void
+    {
+        $address = '203.0.113.10';
+        $lock = Cache::lock('digital-business-cards:lead-rate-limit:'.hash('sha256', $address), 10);
+        $this->assertTrue($lock->get());
+
+        try {
+            $request = Request::create('/livewire/update', 'POST', server: ['REMOTE_ADDR' => $address]);
+            RateLimits::ensureLeadSubmissionIsAllowed($request, 'example-card');
+            $this->fail('A concurrent reservation should not bypass the shared rate-limit lock.');
+        } catch (TooManyRequestsHttpException $exception) {
+            $this->assertSame(1, $exception->getHeaders()['Retry-After']);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    public function test_lead_and_analytics_event_are_rolled_back_together(): void
+    {
+        Event::fake([ContactExchangeCompleted::class]);
+        $card = $this->createCard();
+        $events = new class extends EventRecorder
+        {
+            public function record(Request $request, DigitalBusinessCard $card, string $type, ?int $blockId = null): void
+            {
+                throw new \RuntimeException('Event write failed.');
+            }
+        };
+
+        try {
+            (new LeadSubmission($events))->submit(Request::create('/contacts', 'POST'), $card, [
+                'name' => 'Visitor',
+                'consent_given' => true,
+                'submitted_at' => now(),
+            ]);
+            $this->fail('The event write failure should abort the submission.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Event write failed.', $exception->getMessage());
+        }
+
+        $this->assertSame(0, $card->leads()->count());
+        Event::assertNotDispatched(ContactExchangeCompleted::class);
     }
 
     public function test_notification_listener_uses_replaceable_sender_and_event_is_queue_safe(): void

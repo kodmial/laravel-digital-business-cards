@@ -3,7 +3,9 @@
 namespace DigitalCardKit\Laravel\Support;
 
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
@@ -42,14 +44,21 @@ final class RateLimits
             'leads|'.$address => self::attempts('leads', 'per_ip'),
         ];
 
-        foreach ($limits as $key => $attempts) {
-            if (RateLimiter::tooManyAttempts($key, $attempts)) {
-                throw new TooManyRequestsHttpException(RateLimiter::availableIn($key));
-            }
-        }
+        try {
+            Cache::lock('digital-business-cards:lead-rate-limit:'.hash('sha256', $address), 10)
+                ->block(1, static function () use ($limits): void {
+                    foreach ($limits as $key => $attempts) {
+                        if (RateLimiter::tooManyAttempts($key, $attempts)) {
+                            throw new TooManyRequestsHttpException(RateLimiter::availableIn($key));
+                        }
+                    }
 
-        foreach (array_keys($limits) as $key) {
-            RateLimiter::hit($key, 60);
+                    foreach (array_keys($limits) as $key) {
+                        RateLimiter::hit($key, 60);
+                    }
+                });
+        } catch (LockTimeoutException) {
+            throw new TooManyRequestsHttpException(1);
         }
     }
 

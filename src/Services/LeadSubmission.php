@@ -6,6 +6,7 @@ use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class LeadSubmission
 {
@@ -14,11 +15,13 @@ class LeadSubmission
     /** @param  array<string, mixed>  $attributes */
     public function submit(Request $request, DigitalBusinessCard $card, array $attributes): Model
     {
-        $lead = $card->leads()->create($attributes);
+        return DB::transaction(function () use ($request, $card, $attributes): Model {
+            $lead = $card->leads()->create($attributes);
 
-        $this->events->record($request, $card, 'lead');
-        ContactExchangeCompleted::dispatch($lead->getKey());
+            $this->events->record($request, $card, 'lead');
+            ContactExchangeCompleted::dispatch($lead->getKey());
 
-        return $lead;
+            return $lead;
+        });
     }
 }

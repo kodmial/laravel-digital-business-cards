@@ -41,10 +41,16 @@ describe('digital business card event tracking', () => {
         expect(root.dataset.digitalCardInitialized).toBe('true');
         expect(globalThis.fetch).toHaveBeenCalledTimes(2);
         expect(globalThis.fetch).toHaveBeenNthCalledWith(1, '/card/anna/events', expect.objectContaining({
+            method: 'POST',
+            headers: expect.objectContaining({ 'X-CSRF-TOKEN': 'test-token' }),
             body: JSON.stringify({ type: 'vcard', block_id: null }),
+            keepalive: true,
         }));
         expect(globalThis.fetch).toHaveBeenNthCalledWith(2, '/card/anna/events', expect.objectContaining({
+            method: 'POST',
+            headers: expect.objectContaining({ 'X-CSRF-TOKEN': 'test-token' }),
             body: JSON.stringify({ type: 'cta', block_id: '7' }),
+            keepalive: true,
         }));
     });
 
@@ -54,7 +60,10 @@ describe('digital business card event tracking', () => {
         initDigitalBusinessCard(root);
         root.querySelector('[data-download-vcard]').click();
         expect(globalThis.fetch).toHaveBeenCalledWith('/card/anna/events', expect.objectContaining({
+            method: 'POST',
+            headers: expect.objectContaining({ 'X-CSRF-TOKEN': 'test-token' }),
             body: JSON.stringify({ type: 'vcard', block_id: null }),
+            keepalive: true,
         }));
 
         document.body.innerHTML = '<main data-digital-card><button data-track="contact"></button></main>';

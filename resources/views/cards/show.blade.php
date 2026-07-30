@@ -41,29 +41,17 @@
     data-events-url="{{ route($routeName('events.store'), $card) }}"
     x-data="{
         modal: @js($initialModal),
-        returnFocusTo: null,
-        focusDialog() {
-            const dialog = document.querySelector(`[data-modal='${this.modal}']`)
-            dialog?.querySelector('button, input, textarea, select, a[href], [tabindex]:not([tabindex=\'-1\'])')?.focus()
-        },
+        exchangePromptDelay: 650,
         open(name) {
-            if (this.modal === null) {
-                this.returnFocusTo = document.activeElement
-            }
             this.modal = name
-            this.$nextTick(() => this.focusDialog())
         },
         close() {
-            const returnFocusTo = this.returnFocusTo
             this.modal = null
-            this.returnFocusTo = null
-            this.$nextTick(() => returnFocusTo?.focus())
         },
     }"
     x-bind:class="{ 'digital-card-modal-open': modal !== null }"
     x-on:keydown.escape.window="close()"
     x-on:contact-exchange-succeeded.window="open($event.detail.modal)"
-    x-init="if (modal !== null) { $nextTick(() => focusDialog()) }"
 >
 <main class="digital-card-shell">
     <section class="digital-card-hero" @if($card->cover_image) style="background-image:linear-gradient(180deg,rgba(8,13,26,.15),var(--card-bg) 94%),{{ Css::url((string) $card->storageUrl($card->cover_image)) }}" @endif>
@@ -85,7 +73,7 @@
             <h1>{{ $fullName }}</h1>@if ($card->job_title)<p class="digital-card-title">{{ $card->job_title }}</p>@endif @if ($card->company_name)<p class="digital-card-company">{{ $card->company_name }}</p>@endif @if ($card->headline)<p class="digital-card-headline">{{ $card->headline }}</p>@endif
         </div>
         <div class="digital-card-primary-actions">
-            <button type="button" class="digital-card-save {{ $buttonClass }}" x-on:click="open('save')" data-track="vcard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>{{ $t('actions.save_contact') }}</button>
+            <button type="button" class="digital-card-save {{ $buttonClass }}" x-on:click="open('save')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>{{ $t('actions.save_contact') }}</button>
         </div>
     </section>
 
@@ -161,7 +149,7 @@
     </section>
 </div>
 @endif
-<div class="digital-card-modal" data-modal="save" x-cloak x-show="modal === 'save'" x-transition.opacity x-trap.inert.noscroll="modal === 'save'"><div class="digital-card-modal-backdrop" x-on:click="close()"></div><section class="digital-card-dialog digital-card-save-dialog" role="dialog" aria-modal="true" aria-labelledby="save-title"><button type="button" class="digital-card-modal-close" x-on:click="close()" aria-label="{{ $t('actions.close') }}">×</button><h2 id="save-title">{{ $t('card.delivery_title') }}</h2>@foreach ($contacts as $contact) @php($type = $contact['type'] ?? '') @if(in_array($type, ['telegram', 'max'], true))<a href="{{ ContactChannelRegistry::href($contact) }}" target="_blank" rel="noopener noreferrer" class="digital-card-delivery"><x-digital-business-cards::contact-icon :type="$type" /><span>{{ $t('actions.send_via', ['channel' => $type === 'max' ? 'MAX' : 'Telegram']) }}</span></a>@endif @endforeach<a href="{{ route($routeName('download'), $card) }}" data-download-vcard x-on:click="window.setTimeout(() => open('exchange'), 650)" class="digital-card-save digital-card-save-dialog-vcard {{ $buttonClass }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg><span>{{ $t('actions.save_contact') }}</span></a>@if ($card->lead_form_enabled)<button type="button" x-on:click="open('exchange')" data-track="contact" class="digital-card-exchange {{ $buttonClass }}">{{ $t('actions.exchange') }}</button>@endif</section></div>
+<div class="digital-card-modal" data-modal="save" x-cloak x-show="modal === 'save'" x-transition.opacity x-trap.inert.noscroll="modal === 'save'"><div class="digital-card-modal-backdrop" x-on:click="close()"></div><section class="digital-card-dialog digital-card-save-dialog" role="dialog" aria-modal="true" aria-labelledby="save-title"><button type="button" class="digital-card-modal-close" x-on:click="close()" aria-label="{{ $t('actions.close') }}">×</button><h2 id="save-title">{{ $t('card.delivery_title') }}</h2>@foreach ($contacts as $contact) @php($type = $contact['type'] ?? '') @if(in_array($type, ['telegram', 'max'], true))<a href="{{ ContactChannelRegistry::href($contact) }}" target="_blank" rel="noopener noreferrer" class="digital-card-delivery"><x-digital-business-cards::contact-icon :type="$type" /><span>{{ $t('actions.send_via', ['channel' => $type === 'max' ? 'MAX' : 'Telegram']) }}</span></a>@endif @endforeach<a href="{{ route($routeName('download'), $card) }}" data-download-vcard x-on:click="if (!$event.defaultPrevented) { window.setTimeout(() => open('exchange'), exchangePromptDelay) }" class="digital-card-save digital-card-save-dialog-vcard {{ $buttonClass }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg><span>{{ $t('actions.save_contact') }}</span></a>@if ($card->lead_form_enabled)<button type="button" x-on:click="open('exchange')" data-track="contact" class="digital-card-exchange {{ $buttonClass }}">{{ $t('actions.exchange') }}</button>@endif</section></div>
 @if ($card->lead_form_enabled)
     <livewire:digital-business-cards.contact-exchange-form :card="$card" />
 @endif
