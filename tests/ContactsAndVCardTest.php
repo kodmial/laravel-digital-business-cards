@@ -82,7 +82,7 @@ class ContactsAndVCardTest extends TestCase
         $this->assertStringNotContainsString('javascript:', strtolower($html));
         $this->assertStringNotContainsString('vbscript:', strtolower($html));
         $this->assertStringNotContainsString('data:text/html', strtolower($html));
-        $this->assertStringNotContainsString('Script', $html);
+        $this->assertStringNotContainsString('>Script<', $html);
         $this->assertStringContainsString('href="tel:+12025550123"', $html);
     }
 

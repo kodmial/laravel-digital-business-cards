@@ -43,12 +43,6 @@ parameters:
 			path: src/Http/Controllers/DigitalBusinessCardController.php
 
 		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\>\:\:published\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: src/Http/Controllers/DigitalBusinessCardController.php
-
-		-
 			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead\:\:\$card\.$#'
 			identifier: property.notFound
 			count: 1
@@ -109,26 +103,8 @@ parameters:
 			path: src/Http/Controllers/DigitalBusinessCardLeadExportController.php
 
 		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\>\:\:published\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: src/Http/Requests/StoreCardEventRequest.php
-
-		-
-			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$lead_consent_required\.$#'
-			identifier: property.notFound
-			count: 1
-			path: src/Http/Requests/StoreCardLeadRequest.php
-
-		-
 			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$lead_form_enabled\.$#'
 			identifier: property.notFound
-			count: 1
-			path: src/Http/Requests/StoreCardLeadRequest.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Builder\<DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\>\:\:published\(\)\.$#'
-			identifier: method.notFound
 			count: 1
 			path: src/Http/Requests/StoreCardLeadRequest.php
 

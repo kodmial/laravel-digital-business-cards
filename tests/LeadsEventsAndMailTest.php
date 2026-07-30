@@ -5,6 +5,7 @@ namespace DigitalCardKit\Laravel\Tests;
 use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
 use DigitalCardKit\Laravel\Listeners\QueueContactExchangeNotifications;
 use DigitalCardKit\Laravel\Listeners\SendContactExchangeNotifications;
+use DigitalCardKit\Laravel\Livewire\ContactExchangeForm;
 use DigitalCardKit\Laravel\Mail\ContactExchangeConfirmation;
 use DigitalCardKit\Laravel\Mail\ContactExchangeReceived;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardBlock;
@@ -15,6 +16,7 @@ use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
+use Livewire\Livewire;
 
 class LeadsEventsAndMailTest extends TestCase
 {
@@ -188,7 +190,7 @@ class LeadsEventsAndMailTest extends TestCase
             ->assertSee('A reply will follow shortly.')
             ->assertSee('name="consent"', false)
             ->assertSee('data-inline-lead-form', false)
-            ->assertSee('data-modal="success"', false)
+            ->assertSee('data-modal="legacy-success"', false)
             ->assertSee('Your contact details have been sent')
             ->assertSee('>OK<', false);
     }
@@ -211,6 +213,102 @@ class LeadsEventsAndMailTest extends TestCase
             ->assertSessionHasInput('name', 'Preserved visitor');
 
         $this->assertSame(255, strlen($card->leads()->firstOrFail()->source));
+    }
+
+    public function test_public_card_renders_livewire_forms_and_alpine_modal_controls(): void
+    {
+        $this->createCard();
+
+        $this->get('/card/example-card')
+            ->assertOk()
+            ->assertSee('wire:submit="submit"', false)
+            ->assertSee('wire:model="fields.name"', false)
+            ->assertSee('wire:loading.attr="disabled"', false)
+            ->assertSee('x-data=', false)
+            ->assertSee('x-trap.inert.noscroll', false)
+            ->assertSee('x-on:contact-exchange-succeeded.window', false)
+            ->assertDontSee('action="/card/example-card/contacts"', false);
+    }
+
+    public function test_livewire_validates_dynamic_fields_and_preserves_the_submission_pipeline(): void
+    {
+        Event::fake([ContactExchangeCompleted::class]);
+        $card = $this->createCard([
+            'lead_send_confirmation' => true,
+            'lead_form_fields' => [
+                ['key' => 'name', 'label' => 'Name', 'type' => 'text', 'required' => true],
+                ['key' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true],
+                ['key' => 'telegram', 'label' => 'Telegram', 'type' => 'text', 'required' => false],
+            ],
+        ]);
+
+        $component = Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->set('fields.name', 'Visitor')
+            ->set('fields.email', 'invalid')
+            ->set('consent', true)
+            ->call('submit')
+            ->assertSet('submitted', false);
+
+        $this->assertArrayHasKey('fields.email', $component->get('validationErrors'));
+
+        $component->set('fields.email', 'visitor@example.test')
+            ->set('fields.telegram', '@visitor')
+            ->set('fields.unconfigured', 'ignored')
+            ->call('submit')
+            ->assertHasNoErrors()
+            ->assertSet('submitted', true)
+            ->assertSet('confirmationSent', true);
+
+        $lead = $card->leads()->firstOrFail();
+        $this->assertSame('Visitor', $lead->getAttribute('name'));
+        $this->assertSame('visitor@example.test', $lead->getAttribute('email'));
+        $this->assertSame(['telegram' => '@visitor'], $lead->getAttribute('custom_data'));
+        $this->assertTrue($lead->getAttribute('consent_given'));
+        $this->assertTrue($component->get('submitted'));
+        $this->assertDatabaseHas('digital_business_card_events', [
+            'digital_business_card_id' => $card->getKey(),
+            'type' => 'lead',
+        ]);
+        Event::assertDispatched(ContactExchangeCompleted::class);
+    }
+
+    public function test_livewire_rejects_missing_consent_and_disabled_forms(): void
+    {
+        $card = $this->createCard();
+
+        $component = Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->set('fields.name', 'Visitor')
+            ->set('fields.phone', '+1 202 555 0123')
+            ->call('submit')
+            ->assertSet('submitted', false);
+
+        $this->assertArrayHasKey('consent', $component->get('validationErrors'));
+
+        $card->update(['lead_form_enabled' => false]);
+
+        Livewire::test(ContactExchangeForm::class, ['card' => $card])->assertNotFound();
+    }
+
+    public function test_livewire_submissions_use_the_existing_per_card_rate_limit(): void
+    {
+        config(['digital-business-cards.rate_limits.leads' => ['per_card' => 2, 'per_ip' => 3]]);
+        $card = $this->createCard(['lead_consent_required' => false]);
+
+        foreach (['One', 'Two'] as $name) {
+            Livewire::test(ContactExchangeForm::class, ['card' => $card])
+                ->set('fields.name', $name)
+                ->set('fields.phone', '+1 202 555 0123')
+                ->call('submit')
+                ->assertSet('submitted', true);
+        }
+
+        Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->set('fields.name', 'Three')
+            ->set('fields.phone', '+1 202 555 0123')
+            ->call('submit')
+            ->assertStatus(429);
+
+        $this->assertSame(2, $card->leads()->count());
     }
 
     public function test_notification_listener_uses_replaceable_sender_and_event_is_queue_safe(): void

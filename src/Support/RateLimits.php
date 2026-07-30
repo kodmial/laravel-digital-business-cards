@@ -5,6 +5,7 @@ namespace DigitalCardKit\Laravel\Support;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 /**
  * Named limiters for the public write endpoints.
@@ -30,6 +31,25 @@ final class RateLimits
     {
         foreach ([self::LEADS => 'leads', self::EVENTS => 'events'] as $name => $key) {
             RateLimiter::for($name, static fn (Request $request): array => self::limits($key, $request));
+        }
+    }
+
+    public static function ensureLeadSubmissionIsAllowed(Request $request, string $card): void
+    {
+        $address = (string) $request->ip();
+        $limits = [
+            'leads|'.$card.'|'.$address => self::attempts('leads', 'per_card'),
+            'leads|'.$address => self::attempts('leads', 'per_ip'),
+        ];
+
+        foreach ($limits as $key => $attempts) {
+            if (RateLimiter::tooManyAttempts($key, $attempts)) {
+                throw new TooManyRequestsHttpException(RateLimiter::availableIn($key));
+            }
+        }
+
+        foreach (array_keys($limits) as $key) {
+            RateLimiter::hit($key, 60);
         }
     }
 

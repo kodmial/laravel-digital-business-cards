@@ -29,7 +29,7 @@ trait ResolvesModels
     protected function resolvePublishedCard(string $routeKey): DigitalBusinessCard
     {
         return $this->cardQuery()
-            ->published()
+            ->where('is_published', true)
             ->where($this->cardRouteKeyName(), $routeKey)
             ->firstOrFail();
     }

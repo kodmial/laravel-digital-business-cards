@@ -5,6 +5,7 @@ namespace DigitalCardKit\Laravel;
 use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
 use DigitalCardKit\Laravel\Listeners\QueueContactExchangeNotifications;
 use DigitalCardKit\Laravel\Listeners\SendContactExchangeNotifications;
+use DigitalCardKit\Laravel\Livewire\ContactExchangeForm;
 use DigitalCardKit\Laravel\Notifications\NotificationSender;
 use DigitalCardKit\Laravel\Support\Config;
 use DigitalCardKit\Laravel\Support\RateLimits;
@@ -13,6 +14,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -51,6 +53,7 @@ class DigitalBusinessCardsServiceProvider extends PackageServiceProvider
         parent::boot();
 
         RateLimits::register();
+        Livewire::component('digital-business-cards.contact-exchange-form', ContactExchangeForm::class);
 
         $this->registerLeadExportGate();
 

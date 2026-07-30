@@ -14,6 +14,9 @@
         ? $t('card.about_person')
         : $t('card.about_company');
     $shouldOpenExchange = $card->lead_form_enabled && $errors->any();
+    $initialModal = session('card_lead_sent')
+        ? 'legacy-success'
+        : ($shouldOpenExchange ? 'exchange' : null);
     $routeName = fn (string $name): string => Config::routeName($name);
     $assetUrl = fn (string $file): string => Config::get('assets_url')
         ? asset(trim((string) Config::get('assets_url'), '/').'/'.$file)
@@ -29,9 +32,40 @@
     <link rel="canonical" href="{{ $cardUrl }}">
     <link rel="stylesheet" href="{{ $assetUrl('card.css') }}">
     <script type="module" src="{{ $assetUrl('card.js') }}"></script>
+    @livewireStyles
 </head>
-<body class="digital-card-page {{ $fontClass }}{{ $theme['is_dark'] ? ' digital-card-page--dark' : ' digital-card-page--light' }}" style="--card-bg: {{ $theme['background'] }}; --card-accent: {{ $theme['accent'] }}; --card-text: {{ $theme['text'] }}; --card-surface: {{ $theme['surface'] }}; --card-surface-muted: {{ $theme['surface_muted'] }}; --card-muted-text: {{ $theme['muted_text'] }}; --card-border: {{ $theme['border'] }}; --card-page-bg: {{ $theme['page_background'] }}; --card-shadow: {{ $theme['shadow'] }}; --card-accent-rgb: {{ $theme['accent_rgb'] }};">
-<main class="digital-card-shell" data-digital-card data-events-url="{{ route($routeName('events.store'), $card) }}">
+<body
+    class="digital-card-page {{ $fontClass }}{{ $theme['is_dark'] ? ' digital-card-page--dark' : ' digital-card-page--light' }}"
+    style="--card-bg: {{ $theme['background'] }}; --card-accent: {{ $theme['accent'] }}; --card-text: {{ $theme['text'] }}; --card-surface: {{ $theme['surface'] }}; --card-surface-muted: {{ $theme['surface_muted'] }}; --card-muted-text: {{ $theme['muted_text'] }}; --card-border: {{ $theme['border'] }}; --card-page-bg: {{ $theme['page_background'] }}; --card-shadow: {{ $theme['shadow'] }}; --card-accent-rgb: {{ $theme['accent_rgb'] }};"
+    data-digital-card
+    data-events-url="{{ route($routeName('events.store'), $card) }}"
+    x-data="{
+        modal: @js($initialModal),
+        returnFocusTo: null,
+        focusDialog() {
+            const dialog = document.querySelector(`[data-modal='${this.modal}']`)
+            dialog?.querySelector('button, input, textarea, select, a[href], [tabindex]:not([tabindex=\'-1\'])')?.focus()
+        },
+        open(name) {
+            if (this.modal === null) {
+                this.returnFocusTo = document.activeElement
+            }
+            this.modal = name
+            this.$nextTick(() => this.focusDialog())
+        },
+        close() {
+            const returnFocusTo = this.returnFocusTo
+            this.modal = null
+            this.returnFocusTo = null
+            this.$nextTick(() => returnFocusTo?.focus())
+        },
+    }"
+    x-bind:class="{ 'digital-card-modal-open': modal !== null }"
+    x-on:keydown.escape.window="close()"
+    x-on:contact-exchange-succeeded.window="open($event.detail.modal)"
+    x-init="if (modal !== null) { $nextTick(() => focusDialog()) }"
+>
+<main class="digital-card-shell">
     <section class="digital-card-hero" @if($card->cover_image) style="background-image:linear-gradient(180deg,rgba(8,13,26,.15),var(--card-bg) 94%),{{ Css::url((string) $card->storageUrl($card->cover_image)) }}" @endif>
         @if ($card->logo)
             <div class="digital-card-topbar">
@@ -42,7 +76,7 @@
         @endif
         <div class="digital-card-profile">
             @if ($card->avatar)
-                <button type="button" class="digital-card-avatar-button" data-open-image aria-label="{{ $t('card.open_photo', ['name' => $fullName]) }}">
+                <button type="button" class="digital-card-avatar-button" x-on:click="open('image')" aria-label="{{ $t('card.open_photo', ['name' => $fullName]) }}">
                     <img src="{{ $card->storageUrl($card->avatar) }}" alt="{{ $fullName }}" class="digital-card-avatar">
                 </button>
             @else
@@ -51,7 +85,7 @@
             <h1>{{ $fullName }}</h1>@if ($card->job_title)<p class="digital-card-title">{{ $card->job_title }}</p>@endif @if ($card->company_name)<p class="digital-card-company">{{ $card->company_name }}</p>@endif @if ($card->headline)<p class="digital-card-headline">{{ $card->headline }}</p>@endif
         </div>
         <div class="digital-card-primary-actions">
-            <button type="button" class="digital-card-save {{ $buttonClass }}" data-save-contact data-track="vcard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>{{ $t('actions.save_contact') }}</button>
+            <button type="button" class="digital-card-save {{ $buttonClass }}" x-on:click="open('save')" data-track="vcard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>{{ $t('actions.save_contact') }}</button>
         </div>
     </section>
 
@@ -111,7 +145,7 @@
         @if ($card->lead_form_enabled)
             <section class="digital-card-section digital-card-inline-lead-section" aria-labelledby="inline-lead-title">
                 <div class="digital-card-inline-lead">
-                    <x-digital-business-cards::lead-form :card="$card" :full-name="$fullName" :button-class="$buttonClass" inline />
+                    <livewire:digital-business-cards.contact-exchange-form :card="$card" inline />
                 </div>
             </section>
         @endif
@@ -119,23 +153,23 @@
     <footer class="digital-card-footer"><span>{{ $t('card.footer') }}</span></footer>
 </main>
 @if ($card->avatar)
-<div class="digital-card-modal digital-card-image-modal" data-modal="image" hidden>
-    <div class="digital-card-modal-backdrop" data-close-modal></div>
+<div class="digital-card-modal digital-card-image-modal" data-modal="image" x-cloak x-show="modal === 'image'" x-transition.opacity x-trap.inert.noscroll="modal === 'image'">
+    <div class="digital-card-modal-backdrop" x-on:click="close()"></div>
     <section class="digital-card-lightbox" role="dialog" aria-modal="true" aria-label="{{ $t('card.photo_of', ['name' => $fullName]) }}">
-        <button type="button" class="digital-card-lightbox-close" data-close-modal aria-label="{{ $t('actions.close_image') }}">×</button>
+        <button type="button" class="digital-card-lightbox-close" x-on:click="close()" aria-label="{{ $t('actions.close_image') }}">×</button>
         <img src="{{ $card->storageUrl($card->avatar) }}" alt="{{ $fullName }}">
     </section>
 </div>
 @endif
-<div class="digital-card-modal" data-modal="save" hidden><div class="digital-card-modal-backdrop" data-close-modal></div><section class="digital-card-dialog digital-card-save-dialog" role="dialog" aria-modal="true" aria-labelledby="save-title"><button type="button" class="digital-card-modal-close" data-close-modal aria-label="{{ $t('actions.close') }}">×</button><h2 id="save-title">{{ $t('card.delivery_title') }}</h2>@foreach ($contacts as $contact) @php($type = $contact['type'] ?? '') @if(in_array($type, ['telegram', 'max'], true))<a href="{{ ContactChannelRegistry::href($contact) }}" target="_blank" rel="noopener noreferrer" class="digital-card-delivery"><x-digital-business-cards::contact-icon :type="$type" /><span>{{ $t('actions.send_via', ['channel' => $type === 'max' ? 'MAX' : 'Telegram']) }}</span></a>@endif @endforeach<a href="{{ route($routeName('download'), $card) }}" data-download-vcard class="digital-card-save digital-card-save-dialog-vcard {{ $buttonClass }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg><span>{{ $t('actions.save_contact') }}</span></a>@if ($card->lead_form_enabled)<button type="button" data-open-exchange data-track="contact" class="digital-card-exchange {{ $buttonClass }}">{{ $t('actions.exchange') }}</button>@endif</section></div>
-@if ($card->lead_form_enabled)<div class="digital-card-modal" data-modal="exchange" @unless($shouldOpenExchange) hidden @endunless><div class="digital-card-modal-backdrop" data-close-modal></div><section class="digital-card-dialog" role="dialog" aria-modal="true" aria-labelledby="exchange-title"><button type="button" class="digital-card-modal-close" data-close-modal aria-label="{{ $t('actions.close') }}">×</button>
-    <x-digital-business-cards::lead-form :card="$card" :full-name="$fullName" :button-class="$buttonClass" />
-</section></div>@endif
+<div class="digital-card-modal" data-modal="save" x-cloak x-show="modal === 'save'" x-transition.opacity x-trap.inert.noscroll="modal === 'save'"><div class="digital-card-modal-backdrop" x-on:click="close()"></div><section class="digital-card-dialog digital-card-save-dialog" role="dialog" aria-modal="true" aria-labelledby="save-title"><button type="button" class="digital-card-modal-close" x-on:click="close()" aria-label="{{ $t('actions.close') }}">×</button><h2 id="save-title">{{ $t('card.delivery_title') }}</h2>@foreach ($contacts as $contact) @php($type = $contact['type'] ?? '') @if(in_array($type, ['telegram', 'max'], true))<a href="{{ ContactChannelRegistry::href($contact) }}" target="_blank" rel="noopener noreferrer" class="digital-card-delivery"><x-digital-business-cards::contact-icon :type="$type" /><span>{{ $t('actions.send_via', ['channel' => $type === 'max' ? 'MAX' : 'Telegram']) }}</span></a>@endif @endforeach<a href="{{ route($routeName('download'), $card) }}" data-download-vcard x-on:click="window.setTimeout(() => open('exchange'), 650)" class="digital-card-save digital-card-save-dialog-vcard {{ $buttonClass }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg><span>{{ $t('actions.save_contact') }}</span></a>@if ($card->lead_form_enabled)<button type="button" x-on:click="open('exchange')" data-track="contact" class="digital-card-exchange {{ $buttonClass }}">{{ $t('actions.exchange') }}</button>@endif</section></div>
+@if ($card->lead_form_enabled)
+    <livewire:digital-business-cards.contact-exchange-form :card="$card" />
+@endif
 @if (session('card_lead_sent'))
-    <div class="digital-card-modal" data-modal="success">
-        <div class="digital-card-modal-backdrop" data-close-modal></div>
+    <div class="digital-card-modal" data-modal="legacy-success" x-cloak x-show="modal === 'legacy-success'" x-transition.opacity x-trap.inert.noscroll="modal === 'legacy-success'">
+        <div class="digital-card-modal-backdrop" x-on:click="close()"></div>
         <section class="digital-card-dialog digital-card-success-dialog" role="dialog" aria-modal="true" aria-labelledby="exchange-success-title" aria-describedby="exchange-success-description">
-            <button type="button" class="digital-card-modal-close" data-close-modal aria-label="{{ $t('actions.close') }}">×</button>
+            <button type="button" class="digital-card-modal-close" x-on:click="close()" aria-label="{{ $t('actions.close') }}">×</button>
             <h2 id="exchange-success-title">{{ $t('lead.success_title') }}</h2>
             <p id="exchange-success-description">
                 @if(session('card_confirmation_sent'))
@@ -144,8 +178,9 @@
                     {{ $t('lead.success_unconfirmed', ['name' => $fullName]) }}
                 @endif
             </p>
-            <button type="button" class="digital-card-submit card-button-pill" data-close-modal>{{ $t('actions.confirm') }}</button>
+            <button type="button" class="digital-card-submit card-button-pill" x-on:click="close()">{{ $t('actions.confirm') }}</button>
         </section>
     </div>
 @endif
+@livewireScripts
 </body></html>

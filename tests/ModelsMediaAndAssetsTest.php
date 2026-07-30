@@ -63,7 +63,7 @@ class ModelsMediaAndAssetsTest extends TestCase
             ->assertOk()
             ->assertSee($card->storageUrl('cards/avatars/person.jpg'), false)
             ->assertSee($card->storageUrl('cards/logos/company.png'), false)
-            ->assertSee('data-open-image', false)
+            ->assertSee('x-on:click="open(\'image\')"', false)
             ->assertSee('data-modal="image"', false)
             ->assertSee('digital-card-logo', false);
     }
@@ -313,7 +313,7 @@ class ModelsMediaAndAssetsTest extends TestCase
             ->assertHeader('etag')
             ->assertHeader('last-modified');
         $js = $jsResponse->getContent();
-        $this->assertStringContainsString('data-open-image', $js);
+        $this->assertStringContainsString("root.querySelectorAll('[data-track]')", $js);
 
         $this->withHeader('If-None-Match', 'W/'.$cssResponse->headers->get('etag'))
             ->get('/digital-business-cards/assets/card.css')
