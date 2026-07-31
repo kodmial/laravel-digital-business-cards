@@ -51,6 +51,8 @@ class CardRenderingTest extends TestCase
             ->assertSee('Minimal')
             ->assertSee('Save to contacts')
             ->assertSee('data-modal="save"', false)
+            ->assertSee('data-download-vcard', false)
+            ->assertDontSee("window.setTimeout(() => open('exchange'), exchangePromptDelayAfterDownload)", false)
             ->assertDontSee('digital-card-company-section', false)
             ->assertDontSee('About the company')
             ->assertDontSee('About me');

@@ -25,7 +25,9 @@
         <a
             href="{{ route($routeName('download'), $card) }}"
             data-download-vcard
-            x-on:click="if (!$event.defaultPrevented) { window.setTimeout(() => open('exchange'), exchangePromptDelayAfterDownload) }"
+            @if ($card->lead_form_enabled)
+                x-on:click="if (!$event.defaultPrevented) { window.setTimeout(() => open('exchange'), exchangePromptDelayAfterDownload) }"
+            @endif
             class="digital-card-save digital-card-save-dialog-vcard {{ $buttonClass }}"
         >
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>

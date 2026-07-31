@@ -236,6 +236,7 @@ class LeadsEventsAndMailTest extends TestCase
             ->assertSee('wire:model="fields.name"', false)
             ->assertSee('wire:loading.attr="disabled"', false)
             ->assertSee('data-track="vcard"', false)
+            ->assertSee("window.setTimeout(() => open('exchange'), exchangePromptDelayAfterDownload)", false)
             ->assertSee('x-data=', false)
             ->assertSee('x-trap.inert.noscroll', false)
             ->assertSee('x-on:contact-exchange-succeeded.window', false)
