@@ -99,6 +99,13 @@ return [
             'open' => 'Open',
             'choose' => 'Choose...',
         ],
+        'preview' => [
+            'heading' => 'Live preview',
+            'open' => 'Open in a new tab',
+            'iframe_title' => 'Live preview of the public card',
+            'unpublished' => 'Publish the card to see a live preview',
+            'unpublished_hint' => 'The preview reflects the published card exactly as visitors see it.',
+        ],
         'validation' => [
             'unsupported_scheme' => 'Only http, https, tel and mailto links can be opened from a card.',
         ],

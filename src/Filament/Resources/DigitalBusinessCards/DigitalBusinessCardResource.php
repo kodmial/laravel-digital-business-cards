@@ -77,17 +77,26 @@ class DigitalBusinessCardResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Tabs::make('card')
-                ->columnSpanFull()
-                ->persistTabInQueryString()
-                ->tabs([
-                    Tab::make(self::translate('tabs.profile'))->schema(self::profileTab()),
-                    Tab::make(self::translate('tabs.contacts'))->schema(self::contactsTab()),
-                    Tab::make(self::translate('tabs.blocks'))->schema(self::blocksTab()),
-                    Tab::make(self::translate('tabs.design'))->schema(self::designTab()),
-                    Tab::make(self::translate('tabs.leads'))->schema(self::leadsTab()),
-                ]),
+            self::cardTabs(),
         ]);
+    }
+
+    /**
+     * The tabbed card form, shared by the resource form and the edit page's
+     * split layout so both render the same fields from a single source.
+     */
+    public static function cardTabs(): Tabs
+    {
+        return Tabs::make('card')
+            ->columnSpanFull()
+            ->persistTabInQueryString()
+            ->tabs([
+                Tab::make(self::translate('tabs.profile'))->schema(self::profileTab()),
+                Tab::make(self::translate('tabs.contacts'))->schema(self::contactsTab()),
+                Tab::make(self::translate('tabs.blocks'))->schema(self::blocksTab()),
+                Tab::make(self::translate('tabs.design'))->schema(self::designTab()),
+                Tab::make(self::translate('tabs.leads'))->schema(self::leadsTab()),
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -132,7 +141,7 @@ class DigitalBusinessCardResource extends Resource
     }
 
     /** @return array<int, mixed> */
-    private static function profileTab(): array
+    public static function profileTab(): array
     {
         return [
             Section::make(self::translate('sections.address'))
@@ -175,7 +184,7 @@ class DigitalBusinessCardResource extends Resource
     }
 
     /** @return array<int, mixed> */
-    private static function contactsTab(): array
+    public static function contactsTab(): array
     {
         return [
             Section::make(self::translate('sections.contacts'))
@@ -220,7 +229,7 @@ class DigitalBusinessCardResource extends Resource
     }
 
     /** @return array<int, mixed> */
-    private static function blocksTab(): array
+    public static function blocksTab(): array
     {
         return [
             Section::make(self::translate('sections.blocks'))
@@ -254,7 +263,7 @@ class DigitalBusinessCardResource extends Resource
     }
 
     /** @return array<int, mixed> */
-    private static function designTab(): array
+    public static function designTab(): array
     {
         return [
             Section::make(self::translate('sections.appearance'))
@@ -331,7 +340,7 @@ class DigitalBusinessCardResource extends Resource
     }
 
     /** @return array<int, mixed> */
-    private static function leadsTab(): array
+    public static function leadsTab(): array
     {
         return [
             Section::make(self::translate('sections.lead_form'))
@@ -409,7 +418,7 @@ class DigitalBusinessCardResource extends Resource
     }
 
     /** @param  array<string, mixed>  $replace */
-    private static function translate(string $key, array $replace = []): string
+    public static function translate(string $key, array $replace = []): string
     {
         return __('digital-business-cards::admin.cards.'.$key, $replace);
     }
