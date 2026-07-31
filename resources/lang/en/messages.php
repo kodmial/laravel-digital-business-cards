@@ -49,6 +49,7 @@ return [
         'title' => 'Leave your contact details',
         'description' => 'Leave your details so that :name can get in touch with you.',
         'consent' => 'I consent to the processing of my personal data',
+        'consent_attribute' => 'personal data processing consent',
         'consent_policy' => 'in accordance with the :link',
         'privacy_policy' => 'privacy policy',
         'invalid_phone' => 'The :attribute field must be a valid phone number.',

@@ -17,9 +17,9 @@
         <label wire:key="lead-field-{{ $key }}">
             <span>{{ $field['label'] }} @if($field['required'] ?? false)<b>*</b>@endif</span>
             @if(($field['type'] ?? 'text') === 'textarea')
-                <textarea wire:model="fields.{{ $key }}" name="{{ $key }}" rows="3" @required($field['required'] ?? false)></textarea>
+                <textarea wire:model="fields.{{ $key }}" wire:blur="validateField('{{ $key }}')" name="{{ $key }}" rows="3" @required($field['required'] ?? false)></textarea>
             @else
-                <input wire:model="fields.{{ $key }}" type="{{ $field['type'] ?? 'text' }}" name="{{ $key }}" @required($field['required'] ?? false)>
+                <input wire:model="fields.{{ $key }}" wire:blur="validateField('{{ $key }}')" type="{{ $field['type'] ?? 'text' }}" name="{{ $key }}" @required($field['required'] ?? false)>
             @endif
             @error('fields.'.$key)
                 <em>{{ $message }}</em>
@@ -27,7 +27,7 @@
         </label>
     @endforeach
     <label class="digital-card-consent">
-        <input wire:model="consent" type="checkbox" name="consent" value="1" @required($card->lead_consent_required)>
+        <input wire:model="consent" wire:change="validateConsent" wire:blur="validateConsent" type="checkbox" name="consent" value="1" @required($card->lead_consent_required)>
         <span>
             {{ __('digital-business-cards::messages.lead.consent') }}
             @if($privacyUrl !== '')

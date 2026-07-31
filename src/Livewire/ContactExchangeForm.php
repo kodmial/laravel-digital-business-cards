@@ -115,6 +115,16 @@ class ContactExchangeForm extends Component
         throw new HttpResponseException($response);
     }
 
+    public function validateField(string $key): void
+    {
+        $this->validateLiveAttribute('fields.'.$key);
+    }
+
+    public function validateConsent(): void
+    {
+        $this->validateLiveAttribute('consent');
+    }
+
     private function performSubmission(
         LeadSubmission $submission,
         Request $request,
@@ -132,6 +142,7 @@ class ContactExchangeForm extends Component
             $validated = $this->validate(
                 $this->validationRules($card),
                 ['website.prohibited' => __('digital-business-cards::messages.lead.submission_rejected')],
+                $this->validationAttributes($card),
             );
         } catch (ValidationException $exception) {
             $this->recordValidationErrors($exception->validator->errors());
@@ -224,6 +235,42 @@ class ContactExchangeForm extends Component
         }
 
         return $rules;
+    }
+
+    /** @return array<string, string> */
+    private function validationAttributes(DigitalBusinessCard $card): array
+    {
+        $attributes = [];
+
+        foreach (LeadFormData::validationAttributes($card) as $key => $label) {
+            $attributes[$key === 'consent' ? $key : 'fields.'.$key] = $label;
+        }
+
+        return $attributes;
+    }
+
+    private function validateLiveAttribute(string $attribute): void
+    {
+        $card = $this->card();
+        $rules = $this->validationRules($card);
+
+        if (! array_key_exists($attribute, $rules)) {
+            return;
+        }
+
+        try {
+            $this->validateOnly(
+                $attribute,
+                $rules,
+                ['website.prohibited' => __('digital-business-cards::messages.lead.submission_rejected')],
+                $this->validationAttributes($card),
+            );
+            unset($this->validationErrors[$attribute]);
+        } catch (ValidationException $exception) {
+            $this->validationErrors[$attribute] = $exception->validator->errors()->get($attribute);
+        }
+
+        $this->setErrorBag(new MessageBag($this->validationErrors));
     }
 
     /** @param  array<int, string>  $fieldKeys */

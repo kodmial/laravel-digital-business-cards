@@ -106,7 +106,7 @@ class LeadsEventsAndMailTest extends TestCase
         Event::fake([ContactExchangeCompleted::class]);
         $card = $this->createCard(['lead_form_fields' => [
             ['key' => 'name', 'label' => 'Name', 'type' => 'text', 'required' => true],
-            ['key' => 'email', 'label' => 'Email', 'type' => 'email', 'required' => true],
+            ['key' => 'email', 'label' => 'Work email', 'type' => 'email', 'required' => true],
             ['key' => 'telegram', 'label' => 'Telegram', 'type' => 'text', 'required' => false],
         ]]);
 
@@ -114,7 +114,9 @@ class LeadsEventsAndMailTest extends TestCase
             'name' => 'Visitor',
             'email' => 'invalid',
             'consent' => '1',
-        ])->assertSessionHasErrors('email');
+        ])->assertSessionHasErrors([
+            'email' => 'The Work email field must be a valid email address.',
+        ]);
 
         $this->post('/card/example-card/contacts', [
             'name' => 'Visitor',
@@ -233,7 +235,9 @@ class LeadsEventsAndMailTest extends TestCase
             ->assertOk()
             ->assertSee('wire:submit="submit"', false)
             ->assertSee('novalidate', false)
-            ->assertSee('wire:model="fields.name"', false)
+            ->assertSee('wire:blur="validateField(\'name\')"', false)
+            ->assertSee('wire:change="validateConsent"', false)
+            ->assertSee('wire:blur="validateConsent"', false)
             ->assertSee('wire:loading.attr="disabled"', false)
             ->assertSee('data-track="vcard"', false)
             ->assertSee("window.setTimeout(() => open('exchange'), exchangePromptDelayAfterDownload)", false)
@@ -241,6 +245,31 @@ class LeadsEventsAndMailTest extends TestCase
             ->assertSee('x-trap.inert.noscroll', false)
             ->assertSee('x-on:contact-exchange-succeeded.window', false)
             ->assertDontSee('action="/card/example-card/contacts"', false);
+    }
+
+    public function test_livewire_validates_updated_fields_and_uses_their_configured_labels(): void
+    {
+        $card = $this->createCard([
+            'lead_consent_required' => false,
+            'lead_form_fields' => [
+                ['key' => 'email', 'label' => 'Work email', 'type' => 'email', 'required' => true],
+            ],
+        ]);
+
+        $component = Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->call('validateField', 'email')
+            ->assertSee('The Work email field is required.')
+            ->assertSet('submitted', false);
+
+        $component
+            ->set('fields.email', 'invalid')
+            ->call('validateField', 'email')
+            ->assertSee('The Work email field must be a valid email address.')
+            ->assertSet('submitted', false)
+            ->set('fields.email', 'visitor@example.test')
+            ->call('validateField', 'email')
+            ->assertDontSee('The Work email field must be a valid email address.')
+            ->assertSet('validationErrors', []);
     }
 
     public function test_legacy_validation_errors_and_old_input_are_restored_in_livewire_forms(): void
@@ -262,7 +291,7 @@ class LeadsEventsAndMailTest extends TestCase
         $this->get('/card/example-card')
             ->assertOk()
             ->assertSee('Remembered Visitor')
-            ->assertSee('The email field must be a valid email address.')
+            ->assertSee('The Email field must be a valid email address.')
             ->assertSee("modal: 'exchange'", false);
     }
 
@@ -347,7 +376,7 @@ class LeadsEventsAndMailTest extends TestCase
             ->set('fields.phone', 'not-a-phone-number')
             ->set('consent', true)
             ->call('submit')
-            ->assertSee('Поле fields.phone должно содержать корректный номер телефона.')
+            ->assertSee('Поле Телефон должно содержать корректный номер телефона.')
             ->assertSet('submitted', false);
     }
 
