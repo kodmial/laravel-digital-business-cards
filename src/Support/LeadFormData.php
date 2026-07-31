@@ -67,9 +67,7 @@ final class LeadFormData
                         return;
                     }
 
-                    $fail(__('digital-business-cards::messages.lead.invalid_phone', [
-                        'attribute' => $attribute,
-                    ]));
+                    $fail('digital-business-cards::messages.lead.invalid_phone')->translate();
                 };
             }
 
@@ -81,6 +79,26 @@ final class LeadFormData
             : ['sometimes', 'accepted'];
 
         return $rules;
+    }
+
+    /**
+     * Build human-readable names for validation messages.
+     *
+     * @return array<string, string>
+     */
+    public static function validationAttributes(DigitalBusinessCard $card): array
+    {
+        $attributes = [];
+
+        foreach ($card->validatableLeadFields() as $field) {
+            $key = (string) $field['key'];
+            $label = trim((string) ($field['label'] ?? ''));
+            $attributes[$key] = $label !== '' ? $label : Str::headline($key);
+        }
+
+        $attributes['consent'] = __('digital-business-cards::messages.lead.consent_attribute');
+
+        return $attributes;
     }
 
     /**

@@ -25,6 +25,12 @@ class StoreCardLeadRequest extends FormRequest
         return LeadFormData::rules($this->card());
     }
 
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return LeadFormData::validationAttributes($this->card());
+    }
+
     /** @return array<string, mixed> */
     public function leadAttributes(): array
     {
