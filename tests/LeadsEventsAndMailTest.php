@@ -235,8 +235,9 @@ class LeadsEventsAndMailTest extends TestCase
             ->assertOk()
             ->assertSee('wire:submit="submit"', false)
             ->assertSee('novalidate', false)
-            ->assertSee('wire:model.live.blur="fields.name"', false)
-            ->assertSee('wire:model.live.change="consent"', false)
+            ->assertSee('wire:blur="validateField(\'name\')"', false)
+            ->assertSee('wire:change="validateConsent"', false)
+            ->assertSee('wire:blur="validateConsent"', false)
             ->assertSee('wire:loading.attr="disabled"', false)
             ->assertSee('data-track="vcard"', false)
             ->assertSee("window.setTimeout(() => open('exchange'), exchangePromptDelayAfterDownload)", false)
@@ -255,11 +256,18 @@ class LeadsEventsAndMailTest extends TestCase
             ],
         ]);
 
-        Livewire::test(ContactExchangeForm::class, ['card' => $card])
+        $component = Livewire::test(ContactExchangeForm::class, ['card' => $card])
+            ->call('validateField', 'email')
+            ->assertSee('The Work email field is required.')
+            ->assertSet('submitted', false);
+
+        $component
             ->set('fields.email', 'invalid')
+            ->call('validateField', 'email')
             ->assertSee('The Work email field must be a valid email address.')
             ->assertSet('submitted', false)
             ->set('fields.email', 'visitor@example.test')
+            ->call('validateField', 'email')
             ->assertDontSee('The Work email field must be a valid email address.')
             ->assertSet('validationErrors', []);
     }

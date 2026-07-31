@@ -115,12 +115,12 @@ class ContactExchangeForm extends Component
         throw new HttpResponseException($response);
     }
 
-    public function updatedFields(mixed $value, string $key): void
+    public function validateField(string $key): void
     {
         $this->validateLiveAttribute('fields.'.$key);
     }
 
-    public function updatedConsent(): void
+    public function validateConsent(): void
     {
         $this->validateLiveAttribute('consent');
     }
