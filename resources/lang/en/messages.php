@@ -21,6 +21,7 @@ return [
         'close' => 'Close',
         'close_image' => 'Close the full-screen image',
         'submit_lead' => 'Share my details',
+        'submitting_lead' => 'Sending…',
         'confirm' => 'OK',
     ],
     'fields' => [
@@ -50,6 +51,8 @@ return [
         'consent' => 'I consent to the processing of my personal data',
         'consent_policy' => 'in accordance with the :link',
         'privacy_policy' => 'privacy policy',
+        'invalid_phone' => 'The :attribute field must be a valid phone number.',
+        'submission_rejected' => 'Unable to submit the form. Please try again.',
         'success_title' => 'Your contact details have been sent',
         'success_confirmed' => 'The contact details of “:name” have been emailed to you',
         'success_unconfirmed' => '“:name” has received your contact details',

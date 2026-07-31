@@ -61,6 +61,8 @@ abstract class TestCase extends Orchestra
             'prefix' => '',
             'foreign_key_constraints' => true,
         ]);
+        $app['config']->set('cache.default', 'array');
+        $app['config']->set('session.driver', 'array');
         $app['config']->set('filesystems.default', 'public');
         $app['config']->set('filesystems.disks.public', [
             'driver' => 'local',
@@ -71,6 +73,7 @@ abstract class TestCase extends Orchestra
         ]);
         $app['config']->set('digital-business-cards.storage_disk', 'public');
         $app['config']->set('digital-business-cards.lead_export.middleware', []);
+        $app['config']->set('digital-business-cards.spam_protection.minimum_fill_seconds', 0);
         $app['config']->set('auth.providers.users.model', User::class);
     }
 

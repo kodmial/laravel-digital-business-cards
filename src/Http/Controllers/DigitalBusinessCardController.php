@@ -2,10 +2,10 @@
 
 namespace DigitalCardKit\Laravel\Http\Controllers;
 
-use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
 use DigitalCardKit\Laravel\Http\Requests\StoreCardEventRequest;
 use DigitalCardKit\Laravel\Http\Requests\StoreCardLeadRequest;
 use DigitalCardKit\Laravel\Services\EventRecorder;
+use DigitalCardKit\Laravel\Services\LeadSubmission;
 use DigitalCardKit\Laravel\Services\VCardGenerator;
 use DigitalCardKit\Laravel\Support\Config;
 use DigitalCardKit\Laravel\Support\ResolvesModels;
@@ -21,6 +21,7 @@ class DigitalBusinessCardController extends Controller
     public function __construct(
         private readonly EventRecorder $events,
         private readonly VCardGenerator $vcard,
+        private readonly LeadSubmission $leadSubmission,
     ) {}
 
     public function show(Request $request, string $card): Response
@@ -48,10 +49,7 @@ class DigitalBusinessCardController extends Controller
     public function submitLead(StoreCardLeadRequest $request): RedirectResponse
     {
         $card = $request->card();
-        $lead = $card->leads()->create($request->leadAttributes());
-
-        $this->events->record($request, $card, 'lead');
-        ContactExchangeCompleted::dispatch($lead->getKey());
+        $lead = $this->leadSubmission->submit($request, $card, $request->leadAttributes());
 
         return redirect()
             ->route(Config::routeName('show'), $card)

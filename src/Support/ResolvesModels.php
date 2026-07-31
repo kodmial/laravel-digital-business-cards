@@ -28,8 +28,10 @@ trait ResolvesModels
      */
     protected function resolvePublishedCard(string $routeKey): DigitalBusinessCard
     {
-        return $this->cardQuery()
-            ->published()
+        $query = $this->cardQuery();
+        $query->getModel()->scopePublished($query);
+
+        return $query
             ->where($this->cardRouteKeyName(), $routeKey)
             ->firstOrFail();
     }

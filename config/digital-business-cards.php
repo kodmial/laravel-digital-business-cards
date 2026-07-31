@@ -23,6 +23,10 @@ return [
         'leads' => ['per_card' => 10, 'per_ip' => 30],
         'events' => ['per_card' => 120, 'per_ip' => 600],
     ],
+    'spam_protection' => [
+        'enabled' => true,
+        'minimum_fill_seconds' => 2,
+    ],
     'lead_export' => [
         'path' => 'admin/digital-business-card-leads-export',
         'route_name' => 'admin.cards.leads.export',
