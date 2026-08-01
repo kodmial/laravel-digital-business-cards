@@ -7,7 +7,7 @@ use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\Pages\EditDig
 use DigitalCardKit\Laravel\Livewire\ContactExchangeForm;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use DigitalCardKit\Laravel\Support\Config;
-use DigitalCardKit\Laravel\Tests\Fixtures\User;
+use DigitalCardKit\Laravel\Tests\Concerns\CreatesAdminRecords;
 use Filament\Schemas\Components\Wizard;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
@@ -15,13 +15,11 @@ use Sabre\VObject\Reader;
 
 class AdminCardLifecycleTest extends TestCase
 {
+    use CreatesAdminRecords;
+
     public function test_create_wizard_next_actions_can_skip_steps_and_final_submission_validates_profile(): void
     {
-        $admin = User::query()->create([
-            'name' => 'Wizard administrator',
-            'email' => 'wizard@example.test',
-            'password' => bcrypt('password'),
-        ]);
+        $admin = $this->createAdminUser();
 
         $component = Livewire::actingAs($admin)->test(CreateDigitalBusinessCard::class);
         $page = $component->instance();
@@ -57,11 +55,7 @@ class AdminCardLifecycleTest extends TestCase
     {
         Mail::fake();
 
-        $admin = User::query()->create([
-            'name' => 'Card administrator',
-            'email' => 'admin@example.test',
-            'password' => bcrypt('password'),
-        ]);
+        $admin = $this->createAdminUser();
 
         Livewire::actingAs($admin)
             ->test(CreateDigitalBusinessCard::class)
