@@ -97,7 +97,16 @@ return [
             'add_block' => 'Add a block',
             'add_field' => 'Add a field',
             'open' => 'Open',
+            'open_card' => 'Open card',
+            'create_card' => 'Create card',
             'choose' => 'Choose...',
+        ],
+        'preview' => [
+            'heading' => 'Published version',
+            'open' => 'Open in a new tab',
+            'iframe_title' => 'Published card preview',
+            'unpublished' => 'Publish the card to see its published version',
+            'unpublished_hint' => 'The preview shows the published card and refreshes after each save.',
         ],
         'validation' => [
             'unsupported_scheme' => 'Only http, https, tel and mailto links can be opened from a card.',

@@ -26,6 +26,9 @@ Route::middleware($middleware)
         Route::post('/{card}/events', [DigitalBusinessCardController::class, 'event'])
             ->middleware(Config::middleware('event_middleware', ['throttle:'.RateLimits::EVENTS]))
             ->name('events.store');
+        Route::post('/{card}/preview', [DigitalBusinessCardController::class, 'preview'])
+            ->middleware(Config::middleware('preview.middleware', ['web', 'auth']))
+            ->name('preview');
     });
 
 Route::middleware(Config::middleware('lead_export.middleware'))
