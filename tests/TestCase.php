@@ -28,11 +28,15 @@ abstract class TestCase extends Orchestra
 
     private string $testFilesystemRoot;
 
+    /**
+     * Filament Support replaces Livewire's data store binding, so Livewire
+     * must register afterwards and retain the replacement as its instance.
+     */
     protected function getPackageProviders($app): array
     {
         return [
-            LivewireServiceProvider::class,
             SupportServiceProvider::class,
+            LivewireServiceProvider::class,
             ActionsServiceProvider::class,
             FormsServiceProvider::class,
             InfolistsServiceProvider::class,
