@@ -8,12 +8,51 @@ use DigitalCardKit\Laravel\Livewire\ContactExchangeForm;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use DigitalCardKit\Laravel\Support\Config;
 use DigitalCardKit\Laravel\Tests\Fixtures\User;
+use Filament\Schemas\Components\Wizard;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Sabre\VObject\Reader;
 
 class AdminCardLifecycleTest extends TestCase
 {
+    public function test_create_wizard_next_actions_can_skip_steps_and_final_submission_validates_profile(): void
+    {
+        $admin = User::query()->create([
+            'name' => 'Wizard administrator',
+            'email' => 'wizard@example.test',
+            'password' => bcrypt('password'),
+        ]);
+
+        $component = Livewire::actingAs($admin)->test(CreateDigitalBusinessCard::class);
+        $page = $component->instance();
+        $this->assertInstanceOf(CreateDigitalBusinessCard::class, $page);
+
+        $schema = $page->getSchema('form');
+        $this->assertNotNull($schema);
+
+        $wizard = $schema->getComponent(
+            static fn ($component): bool => $component instanceof Wizard,
+        );
+        $this->assertInstanceOf(Wizard::class, $wizard);
+        $this->assertTrue($wizard->isSkippable());
+
+        foreach (range(0, 3) as $currentStepIndex) {
+            $component
+                ->call('callSchemaComponentMethod', $wizard->getKey(), 'nextStep', [$currentStepIndex])
+                ->assertDispatched('next-wizard-step', key: $wizard->getKey())
+                ->assertHasNoErrors();
+        }
+
+        $component
+            ->call('create')
+            ->assertHasErrors([
+                'data.slug' => 'required',
+                'data.first_name' => 'required',
+            ]);
+
+        $this->assertDatabaseCount('digital_business_cards', 0);
+    }
+
     public function test_admin_can_create_edit_and_publish_a_complete_working_card(): void
     {
         Mail::fake();

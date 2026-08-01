@@ -2,8 +2,6 @@
 
 namespace DigitalCardKit\Laravel\Tests;
 
-use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
-use BladeUI\Icons\BladeIconsServiceProvider;
 use DigitalCardKit\Laravel\DigitalBusinessCardsServiceProvider;
 use DigitalCardKit\Laravel\Tests\Fixtures\TestAdminPanelProvider;
 use DigitalCardKit\Laravel\Tests\Fixtures\User;
@@ -25,13 +23,14 @@ use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
 {
+    /** Discover transitive UI providers exactly as a host Laravel application does. */
+    protected $enablesPackageDiscoveries = true;
+
     private string $testFilesystemRoot;
 
     protected function getPackageProviders($app): array
     {
         return [
-            BladeIconsServiceProvider::class,
-            BladeHeroiconsServiceProvider::class,
             LivewireServiceProvider::class,
             SupportServiceProvider::class,
             ActionsServiceProvider::class,
