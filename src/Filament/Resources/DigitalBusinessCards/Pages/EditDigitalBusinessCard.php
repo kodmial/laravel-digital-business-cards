@@ -11,6 +11,7 @@ use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\MessageBag;
 
 class EditDigitalBusinessCard extends EditRecord
 {
@@ -21,6 +22,21 @@ class EditDigitalBusinessCard extends EditRecord
      * and picks up the just-saved changes, even when the card URL is unchanged.
      */
     public int $previewVersion = 0;
+
+    /** Normalize an empty Livewire error bag before the initial editor render. */
+    public function getErrorBag(): MessageBag
+    {
+        $errorBag = parent::getErrorBag();
+
+        if ($errorBag instanceof MessageBag) {
+            return $errorBag;
+        }
+
+        $errorBag = new MessageBag;
+        $this->setErrorBag($errorBag);
+
+        return $errorBag;
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -33,7 +49,7 @@ class EditDigitalBusinessCard extends EditRecord
                     // while the published-version preview sits alongside.
                     DigitalBusinessCardResource::cardTabs()
                         ->columnSpan(['lg' => 2]),
-                    View::make('digital-business-cards::filament.components.live-preview')
+                    View::make('digital-business-cards::filament.components.published-preview')
                         ->columnSpan(['lg' => 1])
                         ->viewData(fn (): array => [
                             'card' => $this->getRecord(),

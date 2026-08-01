@@ -7,12 +7,28 @@ use Filament\Actions\Action;
 use Filament\Resources\Pages\Concerns\HasWizard;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Schemas\Components\Wizard\Step;
+use Illuminate\Support\MessageBag;
 
 class CreateDigitalBusinessCard extends CreateRecord
 {
     use HasWizard;
 
     protected static string $resource = DigitalBusinessCardResource::class;
+
+    /** Normalize an empty Livewire error bag before the initial wizard render. */
+    public function getErrorBag(): MessageBag
+    {
+        $errorBag = parent::getErrorBag();
+
+        if ($errorBag instanceof MessageBag) {
+            return $errorBag;
+        }
+
+        $errorBag = new MessageBag;
+        $this->setErrorBag($errorBag);
+
+        return $errorBag;
+    }
 
     protected function getCreateFormAction(): Action
     {
