@@ -16,7 +16,7 @@ class CreateDigitalBusinessCard extends CreateRecord
 
     protected function getCreateFormAction(): Action
     {
-        return parent::getCreateFormAction()->label('Создать визитку');
+        return parent::getCreateFormAction()->label(DigitalBusinessCardResource::translate('actions.create_card'));
     }
 
     protected function getFormMaxWidth(): ?string

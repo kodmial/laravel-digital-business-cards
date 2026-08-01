@@ -3,6 +3,7 @@
     $card = $card ?? null;
     $url = $card?->publicUrl() ?? '';
     $isPublished = (bool) ($card?->is_published ?? false);
+    $previewVersion = (int) ($previewVersion ?? 0);
     $openLabel = __('digital-business-cards::admin.cards.preview.open');
     $notice = __('digital-business-cards::admin.cards.preview.unpublished');
 @endphp
@@ -24,12 +25,18 @@
     </div>
 
     @if($isPublished && $url !== '')
+        {{-- The iframe loads our own published card from the same origin. The
+             sandbox keeps it isolated while still allowing its scripts and
+             forms to run; allow-same-origin is safe here because the embedded
+             content is our own card, not third-party markup. Bumping the
+             preview version re-mounts the frame so it refreshes after a save. --}}
         <iframe
+            wire:key="card-preview-{{ $previewVersion }}"
             src="{{ $url }}"
             title="{{ __('digital-business-cards::admin.cards.preview.iframe_title') }}"
             loading="lazy"
             style="width:100%; height: 70vh; border: 1px solid rgb(229 231 235); border-radius: .5rem; background:#fff;"
-            sandbox="allow-scripts allow-popups allow-downloads"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
         ></iframe>
     @else
         <div style="

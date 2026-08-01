@@ -6,12 +6,14 @@ use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\DigitalBusine
 use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\Pages\CreateDigitalBusinessCard;
 use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\Pages\EditDigitalBusinessCard;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
+use DigitalCardKit\Laravel\Tests\Fixtures\User;
 use Filament\Actions\Action;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Schemas\Schema;
+use Livewire\Livewire;
 
 /**
  * Option C: the create page becomes a guided five-step wizard, and the edit
@@ -251,7 +253,10 @@ class WizardAndSplitLayoutTest extends TestCase
         $this->assertStringContainsString('<iframe', $html);
         $this->assertStringContainsString('preview-published', $html);
         $this->assertStringContainsString('src=', $html);
-        $this->assertStringNotContainsString('Publish the card to see a live preview', $html);
+        $this->assertStringNotContainsString('Publish the card', $html);
+        // The sandbox isolates our own card while letting its scripts/forms run.
+        $this->assertStringContainsString('allow-same-origin', $html);
+        $this->assertStringContainsString('allow-forms', $html);
     }
 
     public function test_the_live_preview_shows_an_unpublished_notice_instead_of_an_iframe(): void
@@ -263,7 +268,7 @@ class WizardAndSplitLayoutTest extends TestCase
         ])->render();
 
         $this->assertStringNotContainsString('<iframe', $html);
-        $this->assertStringContainsString('Publish the card to see a live preview', $html);
+        $this->assertStringContainsString('Publish the card to see its published version', $html);
     }
 
     public function test_the_live_preview_follows_the_application_locale(): void
@@ -276,8 +281,8 @@ class WizardAndSplitLayoutTest extends TestCase
             'card' => DigitalBusinessCard::query()->where('slug', 'preview-locale')->firstOrFail(),
         ])->render();
 
-        $this->assertStringContainsString('Живое превью', $html);
-        $this->assertStringContainsString('Опубликуйте визитку, чтобы увидеть живое превью', $html);
+        $this->assertStringContainsString('Опубликованная версия', $html);
+        $this->assertStringContainsString('Опубликуйте визитку, чтобы увидеть её опубликованную версию', $html);
         $this->assertStringNotContainsString('digital-business-cards::admin', $html);
     }
 
@@ -285,20 +290,105 @@ class WizardAndSplitLayoutTest extends TestCase
     {
         // The admin wizard/split layout only reshapes the Filament form; the
         // public card reads the same model columns, so this guards against
-        // accidental coupling between the two rendering surfaces.
-        $this->makeCard([
+        // accidental coupling between the two rendering surfaces. A card with
+        // contacts and content blocks exercises the public surfaces the admin
+        // form edits.
+        $card = $this->makeCard([
             'slug' => 'example-card',
             'first_name' => 'Alex',
             'middle_name' => 'Taylor',
             'last_name' => 'Morgan',
             'job_title' => 'Product designer',
             'company_name' => 'Example Studio',
+            'headline' => 'Building useful digital products',
+            'about' => 'Independent product design practice.',
+            'contact_methods' => [
+                ['type' => 'phone', 'label' => 'Phone', 'value' => '+1 202 555 0123'],
+                ['type' => 'email', 'label' => 'Email', 'value' => 'alex@example.test'],
+                ['type' => 'telegram', 'label' => 'Telegram', 'value' => '@alex_example'],
+            ],
         ]);
+        $card->blocks()->create(['type' => 'text', 'title' => 'Biography', 'content' => 'Full profile story', 'is_enabled' => true]);
+        $card->blocks()->create(['type' => 'link', 'title' => 'Portfolio', 'url' => 'https://example.test/portfolio', 'button_label' => 'Open portfolio', 'is_enabled' => true]);
+        $card->blocks()->create(['type' => 'text', 'title' => 'Hidden', 'content' => 'Must not appear', 'is_enabled' => false]);
 
         $this->get('/card/example-card')
             ->assertOk()
             ->assertSee('Alex Taylor Morgan')
             ->assertSee('Save to contacts')
-            ->assertSee('Product designer');
+            ->assertSee('Product designer')
+            ->assertSee('Example Studio')
+            ->assertSee('Biography')
+            ->assertSee('Full profile story')
+            ->assertSee('Open portfolio')
+            ->assertDontSee('Must not appear');
+    }
+
+
+    public function test_the_create_page_uses_a_wizard_with_the_expected_steps(): void
+    {
+        $steps = $this->wizardSteps($this->createPage());
+
+        $this->assertCount(5, $steps);
+        $this->assertSame(
+            ['Profile', 'Contacts', 'Content blocks', 'Design and SEO', 'Contact collection'],
+            array_map(static fn (Step $step): string => $step->getLabel(), $steps),
+        );
+
+        foreach ($steps as $step) {
+            $this->assertNotEmpty($step->getIcon(), 'Every wizard step carries an icon.');
+        }
+    }
+
+    public function test_the_edit_page_exposes_a_split_layout_with_a_live_preview_component(): void
+    {
+        $card = $this->makeCard(['slug' => 'edit-split', 'is_published' => true]);
+
+        $page = $this->editPage($card);
+        $schema = $page->form(Schema::make($page));
+        $components = $schema->getComponents();
+
+        $this->assertCount(1, $components);
+        $grid = $components[0];
+        $this->assertTrue(method_exists($grid, 'getChildSchema'));
+
+        $split = $grid->getChildSchema()->getComponents();
+
+        $this->assertInstanceOf(Tabs::class, $split[0]);
+        $this->assertSame(5, count($split[0]->getChildComponents()));
+
+        $this->assertCount(2, $split);
+        $preview = $split[1];
+        $this->assertSame(
+            'digital-business-cards::filament.components.live-preview',
+            $preview->getView(),
+        );
+
+        $data = $preview->evaluate($preview->getViewData());
+        $this->assertSame($card->getKey(), $data['card']->getKey());
+        $this->assertSame(0, $data['previewVersion']);
+    }
+
+    public function test_editing_updates_fields_on_save_and_bumps_the_preview_version(): void
+    {
+        $card = $this->makeCard(['slug' => 'edit-target']);
+
+        $page = $this->editPage($card);
+        $this->assertSame(0, $page->previewVersion);
+
+        // Simulate a save by calling the same handler Filament uses.
+        $method = (new \ReflectionClass(EditDigitalBusinessCard::class))
+            ->getMethod('handleRecordUpdate');
+        $method->setAccessible(true);
+
+        $updated = $method->invoke($page, $card, [
+            'slug' => 'edit-target',
+            'is_published' => true,
+            'first_name' => 'Edit',
+            'last_name' => 'Target',
+        ]);
+
+        $this->assertSame('Edit Target', $updated->getAttributeValue('full_name'));
+        $this->assertSame(1, $page->previewVersion);
     }
 }

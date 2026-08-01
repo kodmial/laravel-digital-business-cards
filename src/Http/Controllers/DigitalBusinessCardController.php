@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Arr;
 
 class DigitalBusinessCardController extends Controller
 {
@@ -71,5 +72,29 @@ class DigitalBusinessCardController extends Controller
         );
 
         return response()->noContent();
+    }
+
+    /**
+     * Render the public card view for the admin split-layout preview from an
+     * unsaved payload. This keeps the preview faithful to what the editor sees
+     * on the public card surface, including its scripts, without persisting
+     * anything before the admin clicks "Save".
+     */
+    public function preview(Request $request, string $card): Response
+    {
+        $data = $request->validate([
+            'payload' => ['required', 'array'],
+            'payload.*' => ['nullable', 'string'],
+        ]);
+
+        $payload = Arr::wrap($data['payload'] ?? []);
+
+        $preview = $this->resolveCard($card)->replicate();
+        $preview->forceFill($payload);
+        $preview->exists = false;
+
+        return response()->view(Config::cardView(), [
+            'card' => $preview->load(['blocks' => fn ($query) => $query->where('is_enabled', true)]),
+        ]);
     }
 }
