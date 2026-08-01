@@ -6,7 +6,6 @@ use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\DigitalBusine
 use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\Pages\CreateDigitalBusinessCard;
 use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\Pages\EditDigitalBusinessCard;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
-use DigitalCardKit\Laravel\Tests\Fixtures\User;
 use Filament\Actions\Action;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Tabs;
@@ -323,7 +322,6 @@ class WizardAndSplitLayoutTest extends TestCase
             ->assertSee('Open portfolio')
             ->assertDontSee('Must not appear');
     }
-
 
     public function test_the_create_page_uses_a_wizard_with_the_expected_steps(): void
     {
