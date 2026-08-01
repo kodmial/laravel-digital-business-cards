@@ -27,21 +27,22 @@ class WizardAndSplitLayoutTest extends TestCase
     }
 
     /**
-     * Create a card straight from the model rather than via the factory state
-     * helpers — keeps these structural assertions free of factory dynamic-method
-     * noise so the suite stays larastan-clean on its own.
+     * Create a card through the shipped factory so the test honours the
+     * package's config-based model indirection (the same PackageTest expects of
+     * every model instance). Defaults keep the preview published unless a test
+     * overrides it.
      *
      * @param  array<string, mixed>  $attributes
      */
     private function makeCard(array $attributes = []): DigitalBusinessCard
     {
-        /** @var DigitalBusinessCard $card */
-        $card = DigitalBusinessCard::query()->create(array_merge([
+        $card = DigitalBusinessCard::factory()->create(array_merge([
             'slug' => 'preview-card',
             'is_published' => true,
             'first_name' => 'Preview',
             'last_name' => 'Card',
         ], $attributes));
+        assert($card instanceof DigitalBusinessCard);
 
         return $card;
     }

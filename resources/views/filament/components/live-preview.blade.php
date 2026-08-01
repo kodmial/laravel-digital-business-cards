@@ -15,7 +15,7 @@
         <span style="font-weight:600; font-size:.85rem;">
             {{ __('digital-business-cards::admin.cards.preview.heading') }}
         </span>
-        @if($url !== '')
+        @if($isPublished && $url !== '')
             <a href="{{ $url }}" target="_blank" rel="noopener"
                style="font-size:.75rem; font-weight:600; text-decoration:none;">
                 {{ $openLabel }}
@@ -29,7 +29,7 @@
             title="{{ __('digital-business-cards::admin.cards.preview.iframe_title') }}"
             loading="lazy"
             style="width:100%; height: 70vh; border: 1px solid rgb(229 231 235); border-radius: .5rem; background:#fff;"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            sandbox="allow-scripts allow-popups allow-downloads"
         ></iframe>
     @else
         <div style="
