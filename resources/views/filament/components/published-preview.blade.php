@@ -9,7 +9,7 @@
 @endphp
 
 <div
-    class="digital-card-live-preview"
+    class="digital-card-published-preview"
     style="position: sticky; top: 1rem; display: grid; gap: .5rem; max-height: calc(100vh - 6rem);"
 >
     <div style="display:flex; align-items:center; justify-content:space-between; gap:.5rem;">
@@ -25,19 +25,22 @@
     </div>
 
     @if($isPublished && $url !== '')
-        {{-- The iframe loads our own published card from the same origin. The
-             sandbox keeps it isolated while still allowing its scripts and
-             forms to run; allow-same-origin is safe here because the embedded
-             content is our own card, not third-party markup. Bumping the
-             preview version re-mounts the frame so it refreshes after a save. --}}
+        {{-- This is a visual rendering of the last saved published version.
+             An empty sandbox deliberately disables scripts, same-origin access,
+             forms, and popups. Use the link above to exercise the interactive
+             public card in a separate tab. --}}
         <iframe
-            wire:key="card-preview-{{ $previewVersion }}"
+            wire:key="published-card-preview-{{ $previewVersion }}"
             src="{{ $url }}"
             title="{{ __('digital-business-cards::admin.cards.preview.iframe_title') }}"
             loading="lazy"
+            referrerpolicy="no-referrer"
             style="width:100%; height: 70vh; border: 1px solid rgb(229 231 235); border-radius: .5rem; background:#fff;"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            sandbox
         ></iframe>
+        <p style="margin: 0; color: rgb(107 114 128); font-size: .75rem;">
+            {{ __('digital-business-cards::admin.cards.preview.interaction_hint') }}
+        </p>
     @else
         <div style="
             border: 1px dashed rgb(209 213 219);

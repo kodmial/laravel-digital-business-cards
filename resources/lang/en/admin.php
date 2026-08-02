@@ -105,6 +105,7 @@ return [
             'heading' => 'Published version',
             'open' => 'Open in a new tab',
             'iframe_title' => 'Published card preview',
+            'interaction_hint' => 'Interactive actions are disabled here. Open the published card in a new tab to test them.',
             'unpublished' => 'Publish the card to see its published version',
             'unpublished_hint' => 'The preview shows the published card and refreshes after each save.',
         ],

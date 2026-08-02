@@ -61,7 +61,10 @@
         "analyse": "phpstan analyse --memory-limit=512M",
         "format": "pint",
         "lint": "pint --test",
-        "test": "phpunit"
+        "test": [
+            "@php vendor/bin/testbench package:discover --no-ansi",
+            "phpunit"
+        ]
     },
     "extra": {
         "laravel": {

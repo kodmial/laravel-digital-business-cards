@@ -16,7 +16,7 @@ use Livewire\Livewire;
 
 /**
  * Option C: the create page becomes a guided five-step wizard, and the edit
- * page wraps the same tabbed form in a split layout with a live preview of
+ * page wraps the same tabbed form in a split layout with a published preview of
  * the published card. These tests pin both the wizard's step structure and
  * the split layout's composition, plus the preview blade's two render modes.
  */
@@ -210,7 +210,7 @@ class WizardAndSplitLayoutTest extends TestCase
         $this->assertTrue($open->shouldOpenUrlInNewTab());
     }
 
-    public function test_the_edit_page_wraps_the_form_in_a_split_layout_with_a_live_preview(): void
+    public function test_the_edit_page_wraps_the_form_in_a_split_layout_with_a_published_preview(): void
     {
         $card = $this->makeCard(['slug' => 'edit-card', 'is_published' => true]);
         $page = $this->editPage($card);
@@ -228,23 +228,24 @@ class WizardAndSplitLayoutTest extends TestCase
         $this->assertInstanceOf(Tabs::class, $split[0]);
         $this->assertSame(5, count($split[0]->getChildComponents()));
 
-        // The preview column: the live-preview view, fed the card record.
+        // The preview column: the published-preview view, fed the card record.
         $this->assertCount(2, $split);
         $preview = $split[1];
         $this->assertSame(
-            'digital-business-cards::filament.components.live-preview',
+            'digital-business-cards::filament.components.published-preview',
             $preview->getView(),
         );
 
         $data = $preview->evaluate($preview->getViewData());
         $this->assertSame($card->getKey(), $data['card']->getKey());
+        $this->assertSame(0, $data['previewVersion']);
     }
 
-    public function test_the_live_preview_renders_an_iframe_of_the_public_card_when_published(): void
+    public function test_the_published_preview_renders_a_restricted_iframe_when_published(): void
     {
         $this->makeCard(['slug' => 'preview-published', 'is_published' => true]);
 
-        $html = view('digital-business-cards::filament.components.live-preview', [
+        $html = view('digital-business-cards::filament.components.published-preview', [
             'card' => DigitalBusinessCard::query()->where('slug', 'preview-published')->firstOrFail(),
         ])->render();
 
@@ -253,16 +254,19 @@ class WizardAndSplitLayoutTest extends TestCase
         $this->assertStringContainsString('preview-published', $html);
         $this->assertStringContainsString('src=', $html);
         $this->assertStringNotContainsString('Publish the card', $html);
-        // The sandbox isolates our own card while letting its scripts/forms run.
-        $this->assertStringContainsString('allow-same-origin', $html);
-        $this->assertStringContainsString('allow-forms', $html);
+        $this->assertMatchesRegularExpression('/<iframe[^>]+sandbox(?:\s|>)/', $html);
+        $this->assertStringNotContainsString('allow-scripts', $html);
+        $this->assertStringNotContainsString('allow-same-origin', $html);
+        $this->assertStringNotContainsString('allow-forms', $html);
+        $this->assertStringNotContainsString('allow-popups', $html);
+        $this->assertStringContainsString('Interactive actions are disabled here', $html);
     }
 
-    public function test_the_live_preview_shows_an_unpublished_notice_instead_of_an_iframe(): void
+    public function test_the_published_preview_shows_an_unpublished_notice_instead_of_an_iframe(): void
     {
         $this->makeCard(['slug' => 'preview-draft', 'is_published' => false]);
 
-        $html = view('digital-business-cards::filament.components.live-preview', [
+        $html = view('digital-business-cards::filament.components.published-preview', [
             'card' => DigitalBusinessCard::query()->where('slug', 'preview-draft')->firstOrFail(),
         ])->render();
 
@@ -270,13 +274,13 @@ class WizardAndSplitLayoutTest extends TestCase
         $this->assertStringContainsString('Publish the card to see its published version', $html);
     }
 
-    public function test_the_live_preview_follows_the_application_locale(): void
+    public function test_the_published_preview_follows_the_application_locale(): void
     {
         $this->makeCard(['slug' => 'preview-locale', 'is_published' => false]);
 
         $this->app->setLocale('ru');
 
-        $html = view('digital-business-cards::filament.components.live-preview', [
+        $html = view('digital-business-cards::filament.components.published-preview', [
             'card' => DigitalBusinessCard::query()->where('slug', 'preview-locale')->firstOrFail(),
         ])->render();
 
@@ -321,50 +325,6 @@ class WizardAndSplitLayoutTest extends TestCase
             ->assertSee('Full profile story')
             ->assertSee('Open portfolio')
             ->assertDontSee('Must not appear');
-    }
-
-    public function test_the_create_page_uses_a_wizard_with_the_expected_steps(): void
-    {
-        $steps = $this->wizardSteps($this->createPage());
-
-        $this->assertCount(5, $steps);
-        $this->assertSame(
-            ['Profile', 'Contacts', 'Content blocks', 'Design and SEO', 'Contact collection'],
-            array_map(static fn (Step $step): string => $step->getLabel(), $steps),
-        );
-
-        foreach ($steps as $step) {
-            $this->assertNotEmpty($step->getIcon(), 'Every wizard step carries an icon.');
-        }
-    }
-
-    public function test_the_edit_page_exposes_a_split_layout_with_a_live_preview_component(): void
-    {
-        $card = $this->makeCard(['slug' => 'edit-split', 'is_published' => true]);
-
-        $page = $this->editPage($card);
-        $schema = $page->form(Schema::make($page));
-        $components = $schema->getComponents();
-
-        $this->assertCount(1, $components);
-        $grid = $components[0];
-        $this->assertTrue(method_exists($grid, 'getChildSchema'));
-
-        $split = $grid->getChildSchema()->getComponents();
-
-        $this->assertInstanceOf(Tabs::class, $split[0]);
-        $this->assertSame(5, count($split[0]->getChildComponents()));
-
-        $this->assertCount(2, $split);
-        $preview = $split[1];
-        $this->assertSame(
-            'digital-business-cards::filament.components.live-preview',
-            $preview->getView(),
-        );
-
-        $data = $preview->evaluate($preview->getViewData());
-        $this->assertSame($card->getKey(), $data['card']->getKey());
-        $this->assertSame(0, $data['previewVersion']);
     }
 
     public function test_editing_updates_fields_on_save_and_bumps_the_preview_version(): void

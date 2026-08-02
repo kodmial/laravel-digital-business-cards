@@ -475,30 +475,6 @@ parameters:
 			path: tests/FilamentAdminTest.php
 
 		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Factories\\Factory\:\:published\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: tests/FilamentAdminTest.php
-
-		-
-			message: '#^Method DigitalCardKit\\Laravel\\Tests\\FilamentAdminTest\:\:createAdminLead\(\) should return DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead but returns Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\|Illuminate\\Database\\Eloquent\\Model\.$#'
-			identifier: return.type
-			count: 1
-			path: tests/FilamentAdminTest.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Factories\\Factory\:\:published\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: tests/LeadExportTest.php
-
-		-
-			message: '#^Method DigitalCardKit\\Laravel\\Tests\\LeadExportTest\:\:createAdminLead\(\) should return DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead but returns Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\|Illuminate\\Database\\Eloquent\\Model\.$#'
-			identifier: return.type
-			count: 1
-			path: tests/LeadExportTest.php
-
-		-
 			message: '#^Access to an undefined property DigitalCardKit\\Laravel\\Models\\DigitalBusinessCard\:\:\$id\.$#'
 			identifier: property.notFound
 			count: 3

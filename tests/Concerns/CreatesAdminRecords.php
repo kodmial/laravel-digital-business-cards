@@ -2,6 +2,8 @@
 
 namespace DigitalCardKit\Laravel\Tests\Concerns;
 
+use DigitalCardKit\Laravel\Database\Factories\DigitalBusinessCardFactory;
+use DigitalCardKit\Laravel\Database\Factories\DigitalBusinessCardLeadFactory;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
 use DigitalCardKit\Laravel\Tests\Fixtures\User;
@@ -20,7 +22,7 @@ trait CreatesAdminRecords
     /** @param  array<string, mixed>  $attributes */
     protected function createAdminCard(array $attributes = []): DigitalBusinessCard
     {
-        return DigitalBusinessCard::factory()->published()->create(array_merge([
+        return DigitalBusinessCardFactory::new()->published()->create(array_merge([
             'slug' => 'admin-check',
             'first_name' => 'Alex',
             'last_name' => 'Morgan',
@@ -33,7 +35,7 @@ trait CreatesAdminRecords
     /** @param  array<string, mixed>  $attributes */
     protected function createAdminLead(DigitalBusinessCard $card, array $attributes = []): DigitalBusinessCardLead
     {
-        return DigitalBusinessCardLead::factory()->for($card, 'card')->create(array_merge([
+        return DigitalBusinessCardLeadFactory::new()->for($card, 'card')->create(array_merge([
             'name' => 'Taylor Smith',
             'phone' => '+1 202 555 0199',
             'email' => 'taylor@example.test',

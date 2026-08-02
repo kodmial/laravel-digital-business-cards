@@ -33,7 +33,7 @@ class EditDigitalBusinessCard extends EditRecord
                     // while the published-version preview sits alongside.
                     DigitalBusinessCardResource::cardTabs()
                         ->columnSpan(['lg' => 2]),
-                    View::make('digital-business-cards::filament.components.live-preview')
+                    View::make('digital-business-cards::filament.components.published-preview')
                         ->columnSpan(['lg' => 1])
                         ->viewData(fn (): array => [
                             'card' => $this->getRecord(),
