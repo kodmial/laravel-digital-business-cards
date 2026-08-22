@@ -60,13 +60,13 @@ class CardFormLayoutTest extends TestCase
     /** @return array<int, Component> */
     private function childComponents(Component $component): array
     {
-        $schema = method_exists($component, 'getChildSchema') ? $component->getChildSchema() : null;
+        $schema = $component->getChildSchema();
 
         if ($schema !== null) {
             return $schema->getComponents();
         }
 
-        return method_exists($component, 'getChildComponents') ? $component->getChildComponents() : [];
+        return $component->getChildComponents();
     }
 
     /** @return array<int, Section> the top-level form sections. */
@@ -314,6 +314,7 @@ class CardFormLayoutTest extends TestCase
         // JS-driven request, so this alone does not exercise the blade.)
         Livewire::actingAs($admin)
             ->test(EditDigitalBusinessCard::class, ['record' => $card->getRouteKey()])
+            // @phpstan-ignore-next-line
             ->mountAction('preview')
             ->assertOk();
 

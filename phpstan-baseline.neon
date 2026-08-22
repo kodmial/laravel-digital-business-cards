@@ -529,12 +529,6 @@ parameters:
 			path: tests/LeadsEventsAndMailTest.php
 
 		-
-			message: '#^Call to an undefined method Mockery\\ExpectationInterface\|Mockery\\HigherOrderMessage\:\:once\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: tests/LeadsEventsAndMailTest.php
-
-		-
 			message: '#^Parameter \#1 \$lead of class DigitalCardKit\\Laravel\\Mail\\ContactExchangeConfirmation constructor expects DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead, Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
 			count: 2
