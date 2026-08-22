@@ -8,7 +8,6 @@ use DigitalCardKit\Laravel\Livewire\ContactExchangeForm;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use DigitalCardKit\Laravel\Support\Config;
 use DigitalCardKit\Laravel\Tests\Concerns\CreatesAdminRecords;
-use Filament\Schemas\Components\Wizard;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Sabre\VObject\Reader;
@@ -17,38 +16,37 @@ class AdminCardLifecycleTest extends TestCase
 {
     use CreatesAdminRecords;
 
-    public function test_create_wizard_next_actions_can_skip_steps_and_final_submission_validates_profile(): void
+    public function test_create_form_validates_profile_and_creates_a_card_in_one_submit(): void
     {
         $admin = $this->createAdminUser();
 
-        $component = Livewire::actingAs($admin)->test(CreateDigitalBusinessCard::class);
-        $page = $component->instance();
-        $this->assertInstanceOf(CreateDigitalBusinessCard::class, $page);
+        // The create flow is a single full-width form: filling the profile and
+        // submitting once is enough to persist a working card.
+        Livewire::actingAs($admin)
+            ->test(CreateDigitalBusinessCard::class)
+            ->set('data.slug', 'new-card')
+            ->set('data.first_name', 'New')
+            ->set('data.last_name', 'Card')
+            ->set('data.is_published', true)
+            ->call('create')
+            ->assertHasNoErrors();
 
-        $schema = $page->getSchema('form');
-        $this->assertNotNull($schema);
+        $this->assertDatabaseHas('digital_business_cards', [
+            'slug' => 'new-card',
+            'first_name' => 'New',
+            'is_published' => true,
+        ]);
 
-        $wizard = $schema->getComponent(
-            static fn ($component): bool => $component instanceof Wizard,
-        );
-        $this->assertInstanceOf(Wizard::class, $wizard);
-        $this->assertTrue($wizard->isSkippable());
-
-        foreach (range(0, 3) as $currentStepIndex) {
-            $component
-                ->call('callSchemaComponentMethod', $wizard->getKey(), 'nextStep', [$currentStepIndex])
-                ->assertDispatched('next-wizard-step', key: $wizard->getKey())
-                ->assertHasNoErrors();
-        }
-
-        $component
+        // Submitting without the required profile fields is rejected.
+        Livewire::actingAs($admin)
+            ->test(CreateDigitalBusinessCard::class)
             ->call('create')
             ->assertHasErrors([
                 'data.slug' => 'required',
                 'data.first_name' => 'required',
             ]);
 
-        $this->assertDatabaseCount('digital_business_cards', 0);
+        $this->assertDatabaseCount('digital_business_cards', 1);
     }
 
     public function test_admin_can_create_edit_and_publish_a_complete_working_card(): void
@@ -76,7 +74,7 @@ class AdminCardLifecycleTest extends TestCase
             ->set('data.headline', 'Updated public headline')
             ->call('save')
             ->assertHasNoErrors()
-            ->assertSet('previewVersion', 1);
+            ->assertSet('data.first_name', 'Updated');
 
         $card->refresh();
 

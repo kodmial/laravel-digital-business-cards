@@ -2,6 +2,8 @@
 
 namespace DigitalCardKit\Laravel\Tests;
 
+use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
+use BladeUI\Icons\BladeIconsServiceProvider;
 use DigitalCardKit\Laravel\DigitalBusinessCardsServiceProvider;
 use DigitalCardKit\Laravel\Tests\Fixtures\TestAdminPanelProvider;
 use DigitalCardKit\Laravel\Tests\Fixtures\User;
@@ -37,6 +39,8 @@ abstract class TestCase extends Orchestra
         return [
             SupportServiceProvider::class,
             LivewireServiceProvider::class,
+            BladeIconsServiceProvider::class,
+            BladeHeroiconsServiceProvider::class,
             ActionsServiceProvider::class,
             FormsServiceProvider::class,
             InfolistsServiceProvider::class,

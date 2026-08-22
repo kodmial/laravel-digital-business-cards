@@ -10,6 +10,7 @@ use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use DigitalCardKit\Laravel\Tests\Concerns\CreatesAdminRecords;
 use Filament\Facades\Filament;
 use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Route;
@@ -90,17 +91,37 @@ class FilamentAdminTest extends TestCase
         );
     }
 
-    public function test_the_card_form_builds_every_tab_without_leaking_translation_keys(): void
+    public function test_the_card_form_builds_a_single_full_width_layout_without_leaking_translation_keys(): void
     {
         $components = $this->cardForm()->getComponents();
 
-        $this->assertCount(1, $components);
-        $tabs = $components[0]->getChildComponents();
-        $this->assertCount(5, $tabs);
-        $this->assertSame(
-            ['Profile', 'Contacts', 'Content blocks', 'Design and SEO', 'Contact collection'],
-            array_map(static fn ($tab): string => $tab->getLabel(), $tabs),
-        );
+        $this->assertNotEmpty($components);
+        foreach ($components as $component) {
+            // The whole form is one column; every top-level group spans it.
+            $this->assertInstanceOf(Section::class, $component);
+            $this->assertSame(['default' => 'full'], $component->getColumnSpan());
+        }
+
+        // The form is no longer a tabbed wizard, yet every field the admin
+        // edited before is still reachable in the flat section tree.
+        $schema = $this->cardForm();
+        $found = [];
+        $queue = $schema->getComponents();
+        while ($queue !== []) {
+            $component = array_shift($queue);
+            if (method_exists($component, 'getName')) {
+                $name = $component->getName();
+                if (in_array($name, ['slug', 'first_name', 'contact_methods', 'blocks', 'theme_mode', 'lead_form_enabled'], true)) {
+                    $found[$name] = true;
+                }
+            }
+            foreach ($component->getChildComponents() as $child) {
+                $queue[] = $child;
+            }
+        }
+        foreach (['slug', 'first_name', 'contact_methods', 'blocks', 'theme_mode', 'lead_form_enabled'] as $name) {
+            $this->assertArrayHasKey($name, $found, "Field [{$name}] should be present in the card form.");
+        }
     }
 
     public function test_uploads_target_the_configured_disk_and_directories(): void
