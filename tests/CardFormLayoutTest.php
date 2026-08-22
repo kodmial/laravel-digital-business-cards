@@ -26,6 +26,7 @@ class CardFormLayoutTest extends TestCase
 {
     use CreatesAdminRecords;
 
+    /** Build an unpersisted create-page instance for form introspection. */
     private function createPage(): CreateDigitalBusinessCard
     {
         return new CreateDigitalBusinessCard;
@@ -47,6 +48,7 @@ class CardFormLayoutTest extends TestCase
         return $card;
     }
 
+    /** Build an edit-page instance with the given record set for form introspection. */
     private function editPage(DigitalBusinessCard $card): EditDigitalBusinessCard
     {
         $page = new EditDigitalBusinessCard;
@@ -80,6 +82,7 @@ class CardFormLayoutTest extends TestCase
         ));
     }
 
+    /** Every top-level form component is a full-width section. */
     public function test_the_resource_form_is_a_single_full_width_layout(): void
     {
         $components = DigitalBusinessCardResource::form(Schema::make($this->createPage()))->getComponents();
@@ -91,6 +94,7 @@ class CardFormLayoutTest extends TestCase
         }
     }
 
+    /** All eight expected sections are present and translate to real labels. */
     public function test_the_form_contains_the_expected_sections(): void
     {
         $labels = array_map(static fn (Section $section): string => (string) $section->getHeading(), $this->createSections());
@@ -118,6 +122,7 @@ class CardFormLayoutTest extends TestCase
         }
     }
 
+    /** The key fields (slug, name, contacts, blocks, theme, lead) are reachable. */
     public function test_the_form_exposes_the_key_fields(): void
     {
         $queue = DigitalBusinessCardResource::form(Schema::make($this->createPage()))->getComponents();
@@ -145,6 +150,7 @@ class CardFormLayoutTest extends TestCase
         }
     }
 
+    /** Address/hero stay open; contacts, appearance, and lead groups collapse. */
     public function test_the_identity_sections_stay_open_while_secondary_groups_collapse(): void
     {
         $byLabel = [];
@@ -165,6 +171,7 @@ class CardFormLayoutTest extends TestCase
         $this->assertTrue($byLabel[$leadForm]->isCollapsible());
     }
 
+    /** Create page form max width resolves to 7xl. */
     public function test_the_create_page_uses_the_wide_form_width(): void
     {
         $reflection = new \ReflectionMethod(CreateDigitalBusinessCard::class, 'getFormMaxWidth');
@@ -172,6 +179,7 @@ class CardFormLayoutTest extends TestCase
         $this->assertSame('7xl', $reflection->invoke($this->createPage()));
     }
 
+    /** Edit page form max width resolves to 7xl. */
     public function test_the_edit_page_uses_the_wide_form_width(): void
     {
         $page = $this->editPage($this->makeCard(['slug' => 'edit-width']));
@@ -180,6 +188,7 @@ class CardFormLayoutTest extends TestCase
         $this->assertSame('7xl', $reflection->invoke($page));
     }
 
+    /** Edit header exposes preview, open (new tab), and delete actions. */
     public function test_the_edit_page_exposes_open_and_delete_header_actions(): void
     {
         $page = $this->editPage($this->makeCard(['slug' => 'edit-actions', 'is_published' => true]));
@@ -205,6 +214,7 @@ class CardFormLayoutTest extends TestCase
         $this->assertTrue($open->shouldOpenUrlInNewTab());
     }
 
+    /** Edit form mirrors create: one full-width column of sections. */
     public function test_the_edit_page_uses_the_same_full_width_form_as_create(): void
     {
         $card = $this->makeCard(['slug' => 'edit-card', 'is_published' => true]);
@@ -220,6 +230,7 @@ class CardFormLayoutTest extends TestCase
         }
     }
 
+    /** Both create and edit pages expose the preview header action. */
     public function test_both_pages_expose_a_preview_header_action(): void
     {
         $edit = $this->editPage($this->makeCard(['slug' => 'preview-edit', 'is_published' => true]));
@@ -230,6 +241,7 @@ class CardFormLayoutTest extends TestCase
         $this->assertContains('preview', array_map(static fn ($action): string => $action->getName(), $createActions));
     }
 
+    /** Preview blade renders locally (no iframe / no public route) with content. */
     public function test_the_card_preview_renders_locally_without_opening_the_public_route(): void
     {
         $card = $this->makeCard([
@@ -254,6 +266,7 @@ class CardFormLayoutTest extends TestCase
         $this->assertStringNotContainsString('/card/', $html);
     }
 
+    /** buildPreviewCard coerces empty upload arrays to null for preview. */
     public function test_preview_card_is_built_from_form_state_with_empty_media_arrays(): void
     {
         // Regression guard: Filament's file-upload fields leave empty arrays in
@@ -288,6 +301,7 @@ class CardFormLayoutTest extends TestCase
         $this->assertTrue($preview->getRelation('blocks')->first()->getAttribute('is_enabled'));
     }
 
+    /** Live preview mount + render survives block media arrays (no TypeError). */
     public function test_preview_action_mounts_without_error_when_blocks_hold_media_arrays(): void
     {
         // Real path: mount the live EditDigitalBusinessCard Livewire component and
@@ -347,6 +361,7 @@ class CardFormLayoutTest extends TestCase
         $this->assertStringNotContainsString('TypeError', $html);
     }
 
+    /** Public card page still renders unchanged by the admin form reshaping. */
     public function test_the_public_card_route_still_renders_unchanged_after_the_admin_form_changes(): void
     {
         // The admin form only reshapes the Filament form; the public card reads
@@ -384,6 +399,7 @@ class CardFormLayoutTest extends TestCase
             ->assertDontSee('Must not appear');
     }
 
+    /** handleRecordUpdate applies the edited fields and recomputes full name. */
     public function test_editing_updates_fields_on_save(): void
     {
         $card = $this->makeCard(['slug' => 'edit-target']);

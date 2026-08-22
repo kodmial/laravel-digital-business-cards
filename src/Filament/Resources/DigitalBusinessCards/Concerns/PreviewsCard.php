@@ -81,6 +81,10 @@ trait PreviewsCard
         return $card;
     }
 
+    /**
+     * Header action that opens the local card preview modal, built from the
+     * live form state via buildPreviewCard() — no record is persisted.
+     */
     protected function previewAction(): Action
     {
         return Action::make('preview')

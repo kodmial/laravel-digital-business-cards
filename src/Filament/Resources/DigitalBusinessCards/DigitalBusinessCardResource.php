@@ -50,31 +50,37 @@ class DigitalBusinessCardResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedIdentification;
 
+    /** Resolve the card model from package config so hosts can substitute it. */
     public static function getModel(): string
     {
         return Config::model('card');
     }
 
+    /** Filament singular resource label, translated through the admin namespace. */
     public static function getModelLabel(): string
     {
         return self::translate('label');
     }
 
+    /** Filament plural resource label, translated through the admin namespace. */
     public static function getPluralModelLabel(): string
     {
         return self::translate('plural_label');
     }
 
+    /** Filament navigation label, translated through the admin namespace. */
     public static function getNavigationLabel(): string
     {
         return self::translate('navigation');
     }
 
+    /** Group under which this resource's nav item appears. */
     public static function getNavigationGroup(): ?string
     {
         return __('digital-business-cards::admin.navigation_group');
     }
 
+    /** Mount the full card form onto the given schema. */
     public static function form(Schema $schema): Schema
     {
         return $schema->components(self::cardForm());
@@ -99,6 +105,7 @@ class DigitalBusinessCardResource extends Resource
         );
     }
 
+    /** List table: identity, publish/lead flags, counts, and an open action. */
     public static function table(Table $table): Table
     {
         return $table
@@ -131,6 +138,7 @@ class DigitalBusinessCardResource extends Resource
             ->defaultSort('updated_at', 'desc');
     }
 
+    /** Route registration for the index, create, and edit pages. */
     public static function getPages(): array
     {
         return [
@@ -140,6 +148,7 @@ class DigitalBusinessCardResource extends Resource
         ];
     }
 
+    /** Identity + hero sections; the address/slug group stays open by default. */
     /** @return array<int, Section> */
     public static function profileSection(): array
     {
@@ -203,6 +212,7 @@ class DigitalBusinessCardResource extends Resource
         ];
     }
 
+    /** Contact-methods repeater, collapsed so the short create form leads. */
     /** @return array<int, Section> */
     public static function contactsSection(): array
     {
@@ -251,6 +261,7 @@ class DigitalBusinessCardResource extends Resource
         ];
     }
 
+    /** Ordered content blocks repeater, collapsed by default. */
     /** @return array<int, Section> */
     public static function blocksSection(): array
     {
@@ -288,6 +299,7 @@ class DigitalBusinessCardResource extends Resource
         ];
     }
 
+    /** Appearance (theme, colours, preview) and SEO sections, collapsed. */
     /** @return array<int, Section> */
     public static function designSection(): array
     {
@@ -371,6 +383,7 @@ class DigitalBusinessCardResource extends Resource
         ];
     }
 
+    /** Lead-form settings and custom lead-field definitions, collapsed. */
     /** @return array<int, Section> */
     public static function leadsSection(): array
     {
@@ -428,6 +441,7 @@ class DigitalBusinessCardResource extends Resource
         ];
     }
 
+    /** Build a disk-backed file-upload field with a translated label. */
     private static function upload(string $name, string $directory): FileUpload
     {
         return FileUpload::make($name)
@@ -455,7 +469,11 @@ class DigitalBusinessCardResource extends Resource
         );
     }
 
-    /** @param  array<string, mixed>  $replace */
+    /**
+     * Translate a single admin namespaced key (digital-business-cards::admin.cards.*).
+     *
+     * @param  array<string, mixed>  $replace
+     */
     public static function translate(string $key, array $replace = []): string
     {
         return __('digital-business-cards::admin.cards.'.$key, $replace);

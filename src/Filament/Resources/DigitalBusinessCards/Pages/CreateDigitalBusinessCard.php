@@ -13,12 +13,14 @@ class CreateDigitalBusinessCard extends CreateRecord
 
     protected static string $resource = DigitalBusinessCardResource::class;
 
+    /** Submit button labelled with the translated "create card" string. */
     protected function getCreateFormAction(): Action
     {
         return parent::getCreateFormAction()
             ->label(DigitalBusinessCardResource::translate('actions.create_card'));
     }
 
+    /** Header actions: preview first, then the parent's defaults. */
     protected function getHeaderActions(): array
     {
         return [
@@ -27,6 +29,7 @@ class CreateDigitalBusinessCard extends CreateRecord
         ];
     }
 
+    /** Widen the create form to the 7xl max width. */
     public function getFormMaxWidth(): ?string
     {
         return '7xl';

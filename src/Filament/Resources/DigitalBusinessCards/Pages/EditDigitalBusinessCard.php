@@ -16,11 +16,13 @@ class EditDigitalBusinessCard extends EditRecord
 
     protected static string $resource = DigitalBusinessCardResource::class;
 
+    /** Mount the same full-width card form used by the create page. */
     public function form(Schema $schema): Schema
     {
         return $schema->components(DigitalBusinessCardResource::cardForm());
     }
 
+    /** Header actions: preview, open-public (if published), and delete. */
     protected function getHeaderActions(): array
     {
         return [
@@ -44,6 +46,7 @@ class EditDigitalBusinessCard extends EditRecord
         return (bool) $this->getRecord()->getAttribute('is_published');
     }
 
+    /** Widen the edit form to the 7xl max width. */
     protected function getFormMaxWidth(): ?string
     {
         return '7xl';

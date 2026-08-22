@@ -55,6 +55,7 @@ abstract class TestCase extends Orchestra
         ];
     }
 
+    /** Configure the in-memory test environment, temp disk, and package config. */
     protected function defineEnvironment($app): void
     {
         $this->testFilesystemRoot = sys_get_temp_dir()
@@ -88,6 +89,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('auth.providers.users.model', User::class);
     }
 
+    /** Load package migrations and create the test users table. */
     protected function defineDatabaseMigrations(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
@@ -102,6 +104,7 @@ abstract class TestCase extends Orchestra
         });
     }
 
+    /** Tear down: remove the temp filesystem root created for the test. */
     protected function tearDown(): void
     {
         try {

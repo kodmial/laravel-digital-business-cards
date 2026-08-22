@@ -16,6 +16,7 @@ class AdminCardLifecycleTest extends TestCase
 {
     use CreatesAdminRecords;
 
+    /** A single create submit persists a card; missing profile fields are rejected. */
     public function test_create_form_validates_profile_and_creates_a_card_in_one_submit(): void
     {
         $admin = $this->createAdminUser();
@@ -49,6 +50,7 @@ class AdminCardLifecycleTest extends TestCase
         $this->assertDatabaseCount('digital_business_cards', 1);
     }
 
+    /** Full create→edit→publish lifecycle: public page, vCard, and lead capture. */
     public function test_admin_can_create_edit_and_publish_a_complete_working_card(): void
     {
         Mail::fake();
