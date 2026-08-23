@@ -2,58 +2,31 @@
 
 namespace DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\Pages;
 
+use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\Concerns\PreviewsCard;
 use DigitalCardKit\Laravel\Filament\Resources\DigitalBusinessCards\DigitalBusinessCardResource;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
-use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Model;
 
 class EditDigitalBusinessCard extends EditRecord
 {
+    use PreviewsCard;
+
     protected static string $resource = DigitalBusinessCardResource::class;
 
-    /**
-     * Incremented after every save so the published-version iframe re-mounts
-     * and picks up the just-saved changes, even when the card URL is unchanged.
-     */
-    public int $previewVersion = 0;
-
+    /** Mount the same full-width card form used by the create page. */
     public function form(Schema $schema): Schema
     {
-        return $schema->components([
-            Grid::make()
-                ->columns(['default' => 1, 'lg' => 3])
-                ->schema([
-                    // The full tabbed form lives in the wider column so an
-                    // editor sees the same fields as on the resource form,
-                    // while the published-version preview sits alongside.
-                    DigitalBusinessCardResource::cardTabs()
-                        ->columnSpan(['lg' => 2]),
-                    View::make('digital-business-cards::filament.components.published-preview')
-                        ->columnSpan(['lg' => 1])
-                        ->viewData(fn (): array => [
-                            'card' => $this->getRecord(),
-                            'previewVersion' => $this->previewVersion,
-                        ]),
-                ]),
-        ]);
+        return $schema->components(DigitalBusinessCardResource::cardForm());
     }
 
-    protected function handleRecordUpdate(Model $record, array $data): Model
-    {
-        $updated = parent::handleRecordUpdate($record, $data);
-        $this->previewVersion++;
-
-        return $updated;
-    }
-
+    /** Header actions: preview, open-public (if published), and delete. */
     protected function getHeaderActions(): array
     {
         return [
+            $this->previewAction(),
             Action::make('open')
                 ->label(DigitalBusinessCardResource::translate('actions.open_card'))
                 ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
@@ -73,6 +46,7 @@ class EditDigitalBusinessCard extends EditRecord
         return (bool) $this->getRecord()->getAttribute('is_published');
     }
 
+    /** Widen the edit form to the 7xl max width. */
     protected function getFormMaxWidth(): ?string
     {
         return '7xl';

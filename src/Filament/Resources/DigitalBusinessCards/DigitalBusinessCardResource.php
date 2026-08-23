@@ -23,13 +23,14 @@ use Filament\Forms\Components\ViewField;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
 
 class DigitalBusinessCardResource extends Resource
 {
@@ -49,56 +50,62 @@ class DigitalBusinessCardResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedIdentification;
 
+    /** Resolve the card model from package config so hosts can substitute it. */
     public static function getModel(): string
     {
         return Config::model('card');
     }
 
+    /** Filament singular resource label, translated through the admin namespace. */
     public static function getModelLabel(): string
     {
         return self::translate('label');
     }
 
+    /** Filament plural resource label, translated through the admin namespace. */
     public static function getPluralModelLabel(): string
     {
         return self::translate('plural_label');
     }
 
+    /** Filament navigation label, translated through the admin namespace. */
     public static function getNavigationLabel(): string
     {
         return self::translate('navigation');
     }
 
+    /** Group under which this resource's nav item appears. */
     public static function getNavigationGroup(): ?string
     {
         return __('digital-business-cards::admin.navigation_group');
     }
 
+    /** Mount the full card form onto the given schema. */
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([
-            self::cardTabs(),
-        ]);
+        return $schema->components(self::cardForm());
     }
 
     /**
-     * The tabbed card form, shared by the resource form and the edit page's
-     * split layout so both render the same fields from a single source.
+     * The full card form as one full-width vertical layout. The identity fields
+     * a new card needs are visible up front; every other group is collapsed so
+     * the editor meets a short form (name, photo, publish) yet keeps each
+     * setting one click and one submit away — no wizard, no tab hopping.
+     *
+     * @return array<int, Section>
      */
-    public static function cardTabs(): Tabs
+    public static function cardForm(): array
     {
-        return Tabs::make('card')
-            ->columnSpanFull()
-            ->persistTabInQueryString()
-            ->tabs([
-                Tab::make(self::translate('tabs.profile'))->schema(self::profileTab()),
-                Tab::make(self::translate('tabs.contacts'))->schema(self::contactsTab()),
-                Tab::make(self::translate('tabs.blocks'))->schema(self::blocksTab()),
-                Tab::make(self::translate('tabs.design'))->schema(self::designTab()),
-                Tab::make(self::translate('tabs.leads'))->schema(self::leadsTab()),
-            ]);
+        return array_merge(
+            self::profileSection(),
+            self::contactsSection(),
+            self::blocksSection(),
+            self::designSection(),
+            self::leadsSection(),
+        );
     }
 
+    /** List table: identity, publish/lead flags, counts, and an open action. */
     public static function table(Table $table): Table
     {
         return $table
@@ -131,6 +138,7 @@ class DigitalBusinessCardResource extends Resource
             ->defaultSort('updated_at', 'desc');
     }
 
+    /** Route registration for the index, create, and edit pages. */
     public static function getPages(): array
     {
         return [
@@ -140,13 +148,15 @@ class DigitalBusinessCardResource extends Resource
         ];
     }
 
-    /** @return array<int, mixed> */
-    public static function profileTab(): array
+    /** Identity + hero sections; the address/slug group stays open by default. */
+    /** @return array<int, Section> */
+    public static function profileSection(): array
     {
         return [
             Section::make(self::translate('sections.address'))
                 ->description(fn (): string => self::translate('sections.address_hint', ['prefix' => Config::routePrefix()]))
                 ->columns(2)
+                ->columnSpanFull()
                 ->schema([
                     TextInput::make('slug')
                         ->label(self::translate('fields.slug'))
@@ -168,12 +178,31 @@ class DigitalBusinessCardResource extends Resource
                 ]),
             Section::make(self::translate('sections.hero'))
                 ->columns(3)
+                ->columnSpanFull()
                 ->schema([
                     self::upload('avatar', 'avatars')->image()->avatar()->imageEditor()->imageEditorAspectRatios(['1:1']),
                     self::upload('logo', 'logos')->image(),
                     self::upload('cover_image', 'covers')->image()->columnSpanFull(),
-                    TextInput::make('first_name')->label(self::translate('fields.first_name'))->maxLength(100)->required(),
-                    TextInput::make('last_name')->label(self::translate('fields.last_name'))->maxLength(100),
+                    TextInput::make('first_name')
+                        ->label(self::translate('fields.first_name'))
+                        ->maxLength(100)
+                        ->required()
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (Set $set, Get $get, ?string $state): void {
+                            // Auto-fill the address until the editor claims it.
+                            if (blank($get('slug'))) {
+                                $set('slug', Str::slug(trim((string) $state.' '.($get('last_name') ?? ''))));
+                            }
+                        }),
+                    TextInput::make('last_name')
+                        ->label(self::translate('fields.last_name'))
+                        ->maxLength(100)
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (Set $set, Get $get, ?string $state): void {
+                            if (blank($get('slug'))) {
+                                $set('slug', Str::slug(trim(($get('first_name') ?? '').' '.(string) $state)));
+                            }
+                        }),
                     TextInput::make('middle_name')->label(self::translate('fields.middle_name'))->maxLength(100),
                     TextInput::make('job_title')->label(self::translate('fields.job_title'))->maxLength(255),
                     TextInput::make('company_name')->label(self::translate('fields.company_name'))->maxLength(255),
@@ -183,12 +212,16 @@ class DigitalBusinessCardResource extends Resource
         ];
     }
 
-    /** @return array<int, mixed> */
-    public static function contactsTab(): array
+    /** Contact-methods repeater, collapsed so the short create form leads. */
+    /** @return array<int, Section> */
+    public static function contactsSection(): array
     {
         return [
             Section::make(self::translate('sections.contacts'))
                 ->description(self::translate('sections.contacts_hint'))
+                ->columnSpanFull()
+                ->collapsible()
+                ->collapsed()
                 ->schema([
                     Repeater::make('contact_methods')
                         ->label('')
@@ -228,12 +261,16 @@ class DigitalBusinessCardResource extends Resource
         ];
     }
 
-    /** @return array<int, mixed> */
-    public static function blocksTab(): array
+    /** Ordered content blocks repeater, collapsed by default. */
+    /** @return array<int, Section> */
+    public static function blocksSection(): array
     {
         return [
             Section::make(self::translate('sections.blocks'))
                 ->description(self::translate('sections.blocks_hint'))
+                ->columnSpanFull()
+                ->collapsible()
+                ->collapsed()
                 ->schema([
                     Repeater::make('blocks')
                         ->relationship()
@@ -262,12 +299,16 @@ class DigitalBusinessCardResource extends Resource
         ];
     }
 
-    /** @return array<int, mixed> */
-    public static function designTab(): array
+    /** Appearance (theme, colours, preview) and SEO sections, collapsed. */
+    /** @return array<int, Section> */
+    public static function designSection(): array
     {
         return [
             Section::make(self::translate('sections.appearance'))
                 ->description(self::translate('sections.appearance_hint'))
+                ->columnSpanFull()
+                ->collapsible()
+                ->collapsed()
                 ->columns(4)
                 ->schema([
                     Select::make('theme_mode')
@@ -332,6 +373,9 @@ class DigitalBusinessCardResource extends Resource
                 ]),
             Section::make(self::translate('sections.seo'))
                 ->columns(2)
+                ->columnSpanFull()
+                ->collapsible()
+                ->collapsed()
                 ->schema([
                     TextInput::make('meta_title')->label(self::translate('fields.meta_title'))->maxLength(255),
                     Textarea::make('meta_description')->label(self::translate('fields.meta_description'))->rows(3)->maxLength(500),
@@ -339,12 +383,16 @@ class DigitalBusinessCardResource extends Resource
         ];
     }
 
-    /** @return array<int, mixed> */
-    public static function leadsTab(): array
+    /** Lead-form settings and custom lead-field definitions, collapsed. */
+    /** @return array<int, Section> */
+    public static function leadsSection(): array
     {
         return [
             Section::make(self::translate('sections.lead_form'))
                 ->description(self::translate('sections.lead_form_hint'))
+                ->columnSpanFull()
+                ->collapsible()
+                ->collapsed()
                 ->columns(3)
                 ->schema([
                     Toggle::make('lead_form_enabled')->label(self::translate('fields.lead_form_enabled'))->default(true),
@@ -360,12 +408,15 @@ class DigitalBusinessCardResource extends Resource
                     Textarea::make('lead_form_description')->label(self::translate('fields.lead_form_description'))->rows(3),
                     TagsInput::make('lead_notification_emails')
                         ->label(self::translate('fields.lead_notification_emails'))
-                        ->placeholder('name@example.com')
+                        ->placeholder(self::translate('fields.lead_notification_emails_placeholder'))
                         ->nestedRecursiveRules(['email:rfc'])
                         ->columnSpanFull(),
                     TextInput::make('privacy_url')->label(self::translate('fields.privacy_url'))->url()->maxLength(2048)->columnSpanFull(),
                 ]),
             Section::make(self::translate('sections.lead_fields'))
+                ->columnSpanFull()
+                ->collapsible()
+                ->collapsed()
                 ->schema([
                     Repeater::make('lead_form_fields')
                         ->label('')
@@ -375,7 +426,7 @@ class DigitalBusinessCardResource extends Resource
                             TextInput::make('key')
                                 ->label(self::translate('fields.field_key'))
                                 ->required()
-                                ->regex(DigitalBusinessCard::LEAD_FIELD_KEY_PATTERN)
+                                ->regex(Config::cardModel()::LEAD_FIELD_KEY_PATTERN)
                                 ->helperText(self::translate('fields.field_key_hint')),
                             TextInput::make('label')->label(self::translate('fields.field_label'))->required()->maxLength(100),
                             Select::make('type')
@@ -390,6 +441,7 @@ class DigitalBusinessCardResource extends Resource
         ];
     }
 
+    /** Build a disk-backed file-upload field with a translated label. */
     private static function upload(string $name, string $directory): FileUpload
     {
         return FileUpload::make($name)
@@ -417,7 +469,11 @@ class DigitalBusinessCardResource extends Resource
         );
     }
 
-    /** @param  array<string, mixed>  $replace */
+    /**
+     * Translate a single admin namespaced key (digital-business-cards::admin.cards.*).
+     *
+     * @param  array<string, mixed>  $replace
+     */
     public static function translate(string $key, array $replace = []): string
     {
         return __('digital-business-cards::admin.cards.'.$key, $replace);

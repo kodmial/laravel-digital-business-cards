@@ -10,6 +10,7 @@ use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use DigitalCardKit\Laravel\Tests\Concerns\CreatesAdminRecords;
 use Filament\Facades\Filament;
 use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +20,7 @@ class FilamentAdminTest extends TestCase
 {
     use CreatesAdminRecords;
 
+    /** Build the card resource form against a fresh create page for introspection. */
     private function cardForm(): Schema
     {
         return DigitalBusinessCardResource::form(Schema::make(new CreateDigitalBusinessCard));
@@ -46,6 +48,7 @@ class FilamentAdminTest extends TestCase
         return null;
     }
 
+    /** Admin panel registers the plugin, resources, and the package admin routes. */
     public function test_testbench_panel_registers_the_plugin_resources_and_admin_routes(): void
     {
         $panel = Filament::getPanel('admin');
@@ -67,6 +70,7 @@ class FilamentAdminTest extends TestCase
         }
     }
 
+    /** Resource navigation/model labels follow the application locale (en/ru). */
     public function test_resource_labels_follow_the_application_locale(): void
     {
         $this->assertSame('Digital business cards', DigitalBusinessCardResource::getNavigationLabel());
@@ -82,6 +86,7 @@ class FilamentAdminTest extends TestCase
         $this->assertSame('Визитки', DigitalBusinessCardResource::getNavigationGroup());
     }
 
+    /** Both resources share one navigation group so their links stay together. */
     public function test_both_resources_share_one_navigation_group_so_they_stay_together(): void
     {
         $this->assertSame(
@@ -90,19 +95,41 @@ class FilamentAdminTest extends TestCase
         );
     }
 
-    public function test_the_card_form_builds_every_tab_without_leaking_translation_keys(): void
+    /** Card form is one full-width layout and exposes every key field. */
+    public function test_the_card_form_builds_a_single_full_width_layout_without_leaking_translation_keys(): void
     {
         $components = $this->cardForm()->getComponents();
 
-        $this->assertCount(1, $components);
-        $tabs = $components[0]->getChildComponents();
-        $this->assertCount(5, $tabs);
-        $this->assertSame(
-            ['Profile', 'Contacts', 'Content blocks', 'Design and SEO', 'Contact collection'],
-            array_map(static fn ($tab): string => $tab->getLabel(), $tabs),
-        );
+        $this->assertNotEmpty($components);
+        foreach ($components as $component) {
+            // The whole form is one column; every top-level group spans it.
+            $this->assertInstanceOf(Section::class, $component);
+            $this->assertSame(['default' => 'full'], $component->getColumnSpan());
+        }
+
+        // The form is no longer a tabbed wizard, yet every field the admin
+        // edited before is still reachable in the flat section tree.
+        $schema = $this->cardForm();
+        $found = [];
+        $queue = $schema->getComponents();
+        while ($queue !== []) {
+            $component = array_shift($queue);
+            if (method_exists($component, 'getName')) {
+                $name = $component->getName();
+                if (in_array($name, ['slug', 'first_name', 'contact_methods', 'blocks', 'theme_mode', 'lead_form_enabled'], true)) {
+                    $found[$name] = true;
+                }
+            }
+            foreach ($component->getChildComponents() as $child) {
+                $queue[] = $child;
+            }
+        }
+        foreach (['slug', 'first_name', 'contact_methods', 'blocks', 'theme_mode', 'lead_form_enabled'] as $name) {
+            $this->assertArrayHasKey($name, $found, "Field [{$name}] should be present in the card form.");
+        }
     }
 
+    /** Avatar upload respects the configured disk and media directory override. */
     public function test_uploads_target_the_configured_disk_and_directories(): void
     {
         config([
@@ -117,6 +144,7 @@ class FilamentAdminTest extends TestCase
         $this->assertSame('custom/avatars', $upload->getDirectory());
     }
 
+    /** Lead-notification address list is validated as RFC email addresses. */
     public function test_notification_addresses_are_validated_as_emails(): void
     {
         $validator = Validator::make(
@@ -128,6 +156,7 @@ class FilamentAdminTest extends TestCase
         $this->assertArrayHasKey('lead_notification_emails.1', $validator->errors()->messages());
     }
 
+    /** Guests are redirected to login from every package admin route. */
     public function test_guests_are_redirected_from_all_package_admin_pages(): void
     {
         $card = $this->createAdminCard();
@@ -144,6 +173,7 @@ class FilamentAdminTest extends TestCase
         }
     }
 
+    /** Resource URLs use the registered panel and slug-based route binding. */
     public function test_resource_urls_use_the_registered_panel_and_slug_route_binding(): void
     {
         $card = $this->createAdminCard();
@@ -162,6 +192,7 @@ class FilamentAdminTest extends TestCase
         );
     }
 
+    /** Card backing data supports list counts, status, and full CRUD round-trip. */
     public function test_card_resource_backing_data_supports_list_status_counts_and_complete_crud(): void
     {
         $published = $this->createAdminCard(['slug' => 'published-card', 'first_name' => 'Published']);
@@ -207,6 +238,7 @@ class FilamentAdminTest extends TestCase
         $this->assertDatabaseMissing('digital_business_cards', ['id' => $complete->getKey()]);
     }
 
+    /** Slug validation rejects bad format and duplicate (unique) values. */
     public function test_slug_validation_rules_reject_invalid_and_duplicate_values(): void
     {
         $this->createAdminCard(['slug' => 'taken-slug']);
@@ -223,6 +255,7 @@ class FilamentAdminTest extends TestCase
         ]);
     }
 
+    /** Card deletion cascades to blocks/events/leads; lead queries filter by card. */
     public function test_card_deletion_cascades_and_lead_queries_support_list_details_and_filters(): void
     {
         $first = $this->createAdminCard(['slug' => 'first-card']);
