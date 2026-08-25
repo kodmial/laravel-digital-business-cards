@@ -8,6 +8,7 @@ use DigitalCardKit\Laravel\Mail\ContactExchangeConfirmation;
 use DigitalCardKit\Laravel\Mail\ContactExchangeReceived;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardBlock;
+use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
 use DigitalCardKit\Laravel\Services\EventRecorder;
 use DigitalCardKit\Laravel\Services\LeadSubmission;
 use DigitalCardKit\Laravel\Support\Config;
@@ -599,12 +600,15 @@ class LeadsEventsAndMailTest extends TestCase
             'digital-business-cards.mail.confirmation_view' => 'mail.custom-confirmation',
             'digital-business-cards.mail.owner_view' => 'mail.custom-owner',
         ]);
-        $lead = $this->createCard()->leads()->create([
-            'name' => 'Visitor',
-            'email' => 'visitor@example.test',
-            'consent_given' => true,
-            'submitted_at' => now(),
-        ])->load('card');
+        $lead = DigitalBusinessCardLead::factory()
+            ->for($this->createCard(), 'card')
+            ->create([
+                'name' => 'Visitor',
+                'email' => 'visitor@example.test',
+                'consent_given' => true,
+                'submitted_at' => now(),
+            ])
+            ->load('card');
 
         $this->assertSame('Custom owner subject', (new ContactExchangeReceived($lead))->envelope()->subject);
         $this->assertSame('Custom confirmation subject', (new ContactExchangeConfirmation($lead))->envelope()->subject);
@@ -614,11 +618,13 @@ class LeadsEventsAndMailTest extends TestCase
 
     public function test_event_is_queue_safe_and_serializes_only_the_lead_identifier(): void
     {
-        $lead = $this->createCard()->leads()->create([
-            'name' => 'Visitor',
-            'consent_given' => true,
-            'submitted_at' => now(),
-        ]);
+        $lead = DigitalBusinessCardLead::factory()
+            ->for($this->createCard(), 'card')
+            ->create([
+                'name' => 'Visitor',
+                'consent_given' => true,
+                'submitted_at' => now(),
+            ]);
 
         $event = new ContactExchangeCompleted((int) $lead->getKey());
 

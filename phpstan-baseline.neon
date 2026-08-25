@@ -517,13 +517,19 @@ parameters:
 			path: tests/LeadsEventsAndMailTest.php
 
 		-
-			message: '#^Parameter \#1 \$lead of class DigitalCardKit\\Laravel\\Mail\\ContactExchangeConfirmation constructor expects DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			message: '#^Parameter \#1 \$lead of class DigitalCardKit\\Laravel\\Mail\\ContactExchangeConfirmation constructor expects DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\|Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
-			count: 3
+			count: 2
 			path: tests/LeadsEventsAndMailTest.php
 
 		-
-			message: '#^Parameter \#1 \$lead of class DigitalCardKit\\Laravel\\Mail\\ContactExchangeReceived constructor expects DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			message: '#^Parameter \#1 \$lead of class DigitalCardKit\\Laravel\\Mail\\ContactExchangeConfirmation constructor expects DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: tests/LeadsEventsAndMailTest.php
+
+		-
+			message: '#^Parameter \#1 \$lead of class DigitalCardKit\\Laravel\\Mail\\ContactExchangeReceived constructor expects DigitalCardKit\\Laravel\\Models\\DigitalBusinessCardLead, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\|Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
 			count: 2
 			path: tests/LeadsEventsAndMailTest.php
