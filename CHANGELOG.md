@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-25
+
+### Removed
+
+- **BC break:** The package no longer sends mail and no longer registers any
+  notification listener. After a contact exchange it only dispatches
+  `ContactExchangeCompleted` (unchanged name and `leadId` payload); delivery is
+  now entirely the host application's responsibility. The
+  `notifications.register_default_listener`, `notifications.queued`,
+  `notifications.queue_connection`, `notifications.queue_name`, and
+  `notification_sender` configuration keys were removed together with the
+  packaged default listeners, the `NotificationSender` contract, its Laravel
+  mail implementation, and the unused notification classes. Host applications
+  must register their own listener for `ContactExchangeCompleted`; the packaged
+  Mailables remain as optional helpers that can be sent from such a listener.
+
+### Changed
+
+- The `illuminate/notifications` dependency was dropped; the optional Mailable
+  helpers keep using `illuminate/mail`.
+
 ### Security
 
 - Contact links are restricted to the `http`, `https`, `tel` and `mailto`
@@ -61,5 +82,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Public card pages, vCard downloads, contact exchange, event tracking, mail
   notifications, themes, and Filament administration resources.
 
-[Unreleased]: https://github.com/kodmial/laravel-digital-business-cards/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/kodmial/laravel-digital-business-cards/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/kodmial/laravel-digital-business-cards/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/kodmial/laravel-digital-business-cards/releases/tag/v1.0.0

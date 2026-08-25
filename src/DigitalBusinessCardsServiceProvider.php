@@ -2,17 +2,12 @@
 
 namespace DigitalCardKit\Laravel;
 
-use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
-use DigitalCardKit\Laravel\Listeners\QueueContactExchangeNotifications;
-use DigitalCardKit\Laravel\Listeners\SendContactExchangeNotifications;
 use DigitalCardKit\Laravel\Livewire\ContactExchangeForm;
-use DigitalCardKit\Laravel\Notifications\NotificationSender;
 use DigitalCardKit\Laravel\Support\Config;
 use DigitalCardKit\Laravel\Support\RateLimits;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
@@ -35,19 +30,6 @@ class DigitalBusinessCardsServiceProvider extends PackageServiceProvider
             ->runsMigrations();
     }
 
-    public function register(): void
-    {
-        parent::register();
-
-        if (! $this->app->bound(NotificationSender::class)) {
-            $this->app->bind(NotificationSender::class, function ($app): NotificationSender {
-                $sender = Config::get('notification_sender');
-
-                return $app->make($sender);
-            });
-        }
-    }
-
     public function boot(): void
     {
         parent::boot();
@@ -56,15 +38,6 @@ class DigitalBusinessCardsServiceProvider extends PackageServiceProvider
         Livewire::component('digital-business-cards.contact-exchange-form', ContactExchangeForm::class);
 
         $this->registerLeadExportGate();
-
-        if (Config::get('notifications.register_default_listener', true)) {
-            Event::listen(
-                ContactExchangeCompleted::class,
-                Config::get('notifications.queued', false)
-                    ? QueueContactExchangeNotifications::class
-                    : SendContactExchangeNotifications::class,
-            );
-        }
 
         $this->publishes([
             __DIR__.'/../resources/css/card.css' => public_path('vendor/digital-business-cards/card.css'),

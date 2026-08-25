@@ -62,7 +62,7 @@ Both the scheme check and `normalize()` match the scheme on the raw string rathe
 
 ### Contact exchange / notification pipeline
 
-`Http\Requests\StoreCardLeadRequest` (validation + `leadAttributes()`) → `DigitalBusinessCardController::submitLead()` → `Events\ContactExchangeCompleted` (serializes only the lead ID, queue-safe) → listener → `Notifications\NotificationSender` → Mailables → Blade views. The service provider registers `SendContactExchangeNotifications` or `QueueContactExchangeNotifications` depending on `notifications.queued`, and only if `notifications.register_default_listener`. It also skips binding `NotificationSender` when the host already bound it. These are the documented extension points (README "Mail") — preserve all of them when changing this path.
+`Http\Requests\StoreCardLeadRequest` (validation + `leadAttributes()`) → `DigitalBusinessCardController::submitLead()` → `Events\ContactExchangeCompleted` (serializes only the lead ID, queue-safe, dispatched after commit) — and that is where the package's responsibility ends. The package ships no listener, sends no mail, and owns no mail configuration; the host application registers its own listener and implements delivery. The packaged `Mail\*` Mailables are optional helpers a host may send from its own listener. Do not reintroduce automatic listeners, sender bindings, or notification config keys.
 
 Lead form fields are per-card JSON (`leadFields()` supplies defaults); `validatableLeadFields()` filters out keys that fail `DigitalBusinessCard::LEAD_FIELD_KEY_PATTERN`, and `StoreCardLeadRequest` builds its rules from what survives. Keys outside the lead table's own columns land in `custom_data`.
 

@@ -4,7 +4,6 @@ use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardBlock;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardEvent;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
-use DigitalCardKit\Laravel\Notifications\LaravelMailNotificationSender;
 use DigitalCardKit\Laravel\Support\RateLimits;
 use Filament\Http\Middleware\Authenticate;
 
@@ -51,15 +50,13 @@ return [
         'content' => 'cards/content',
         'galleries' => 'cards/galleries',
     ],
-    'notifications' => [
-        'register_default_listener' => true,
-        'queued' => false,
-        'queue_connection' => null,
-        'queue_name' => null,
-    ],
-    'notification_sender' => LaravelMailNotificationSender::class,
+    // The package never sends email itself. After every contact exchange it
+    // dispatches DigitalCardKit\Laravel\Events\ContactExchangeCompleted with
+    // the lead identifier; the host application listens for that event and
+    // implements its own delivery. These settings only apply to the optional
+    // Mailable helpers (DigitalCardKit\Laravel\Mail\*) a host may send from
+    // its own listener.
     'mail' => [
-        'mailer' => null,
         'owner_subject' => 'New contact from a digital business card',
         'confirmation_subject' => 'Thank you for sharing your contact details',
         'owner_view' => 'digital-business-cards::emails.contact-exchange-received',
