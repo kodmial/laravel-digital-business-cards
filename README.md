@@ -173,7 +173,8 @@ class SendExchangeNotifications implements ShouldQueue
             }
         }
 
-        if ($lead->consent_given && filter_var($lead->email, FILTER_VALIDATE_EMAIL)) {
+        if ($lead->card->lead_send_confirmation && $lead->consent_given
+            && filter_var($lead->email, FILTER_VALIDATE_EMAIL)) {
             Mail::to($lead->email)->send(new ContactExchangeConfirmation($lead));
         }
     }
