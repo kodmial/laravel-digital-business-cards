@@ -3,15 +3,12 @@
 namespace DigitalCardKit\Laravel\Tests;
 
 use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
-use DigitalCardKit\Laravel\Listeners\QueueContactExchangeNotifications;
-use DigitalCardKit\Laravel\Listeners\SendContactExchangeNotifications;
 use DigitalCardKit\Laravel\Livewire\ContactExchangeForm;
 use DigitalCardKit\Laravel\Mail\ContactExchangeConfirmation;
 use DigitalCardKit\Laravel\Mail\ContactExchangeReceived;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCard;
 use DigitalCardKit\Laravel\Models\DigitalBusinessCardBlock;
-use DigitalCardKit\Laravel\Notifications\LaravelMailNotificationSender;
-use DigitalCardKit\Laravel\Notifications\NotificationSender;
+use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
 use DigitalCardKit\Laravel\Services\EventRecorder;
 use DigitalCardKit\Laravel\Services\LeadSubmission;
 use DigitalCardKit\Laravel\Support\Config;
@@ -19,7 +16,6 @@ use DigitalCardKit\Laravel\Support\RateLimits;
 use DigitalCardKit\Laravel\Tests\Concerns\CreatesCards;
 use DigitalCardKit\Laravel\Tests\Fixtures\RecordLeadMiddleware;
 use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
@@ -555,92 +551,85 @@ class LeadsEventsAndMailTest extends TestCase
         Event::assertNotDispatched(ContactExchangeCompleted::class);
     }
 
-    public function test_notification_listener_uses_replaceable_sender_and_event_is_queue_safe(): void
-    {
-        $lead = $this->createCard()->leads()->create([
-            'name' => 'Visitor',
-            'consent_given' => true,
-            'submitted_at' => now(),
-        ])->load('card');
-        $sender = \Mockery::mock(NotificationSender::class);
-        $sender->shouldReceive('sendContactExchange')->once()
-            ->with(\Mockery::on(fn ($actual): bool => $actual->is($lead)));
-
-        $event = new ContactExchangeCompleted($lead->getKey());
-        (new SendContactExchangeNotifications($sender))->handle($event);
-
-        $this->assertInstanceOf(ShouldDispatchAfterCommit::class, $event);
-    }
-
-    public function test_queued_listener_uses_configured_connection_and_queue(): void
-    {
-        config([
-            'digital-business-cards.notifications.queue_connection' => 'redis',
-            'digital-business-cards.notifications.queue_name' => 'card-mail',
-        ]);
-        $listener = new QueueContactExchangeNotifications(\Mockery::mock(NotificationSender::class));
-
-        $this->assertInstanceOf(ShouldQueue::class, $listener);
-        $this->assertTrue($listener->afterCommit);
-        $this->assertSame('redis', $listener->viaConnection());
-        $this->assertSame('card-mail', $listener->viaQueue());
-    }
-
-    public function test_mail_sender_notifies_owner_and_optionally_confirms_to_consented_visitor(): void
+    public function test_package_ships_without_automatic_mail_or_a_default_listener(): void
     {
         Mail::fake();
-        $card = $this->createCard(['lead_send_confirmation' => true]);
-        $lead = $card->leads()->create([
+        $this->createCard(['lead_send_confirmation' => true]);
+
+        $this->assertFalse(Event::hasListeners(ContactExchangeCompleted::class));
+
+        $this->post('/card/example-card/contacts', [
             'name' => 'Visitor',
+            'phone' => '+1 202 555 0123',
             'email' => 'visitor@example.test',
-            'consent_given' => true,
-            'submitted_at' => now(),
-        ]);
+            'consent' => '1',
+        ])->assertRedirect();
 
-        (new LaravelMailNotificationSender)->sendContactExchange($lead);
+        $this->assertSame(1, Config::model('lead')::count());
+        Mail::assertNothingSent();
+    }
 
-        Mail::assertSent(ContactExchangeReceived::class, fn ($mail): bool => $mail->hasTo('owner@example.test'));
+    public function test_host_listener_sends_the_packaged_mailables_from_the_completion_event(): void
+    {
+        Mail::fake();
+        Event::listen(ContactExchangeCompleted::class, function (ContactExchangeCompleted $event): void {
+            $lead = Config::model('lead')::findOrFail($event->leadId);
+            $lead->loadMissing('card');
+
+            if ($lead->consent_given && filter_var($lead->email, FILTER_VALIDATE_EMAIL) !== false) {
+                Mail::to($lead->email)->send(new ContactExchangeConfirmation($lead));
+            }
+        });
+        $this->createCard(['lead_send_confirmation' => true]);
+
+        $this->post('/card/example-card/contacts', [
+            'name' => 'Visitor',
+            'phone' => '+1 202 555 0123',
+            'email' => 'visitor@example.test',
+            'consent' => '1',
+        ])->assertRedirect();
+
         Mail::assertSent(ContactExchangeConfirmation::class, fn ($mail): bool => $mail->hasTo('visitor@example.test'));
-
-        Mail::fake();
-        $lead->card->update(['lead_send_confirmation' => false]);
-        (new LaravelMailNotificationSender)->sendContactExchange($lead->fresh());
-        Mail::assertSent(ContactExchangeReceived::class);
-        Mail::assertNotSent(ContactExchangeConfirmation::class);
     }
 
-    public function test_mail_sender_rejects_unconsented_or_invalid_delivery_and_views_are_configurable(): void
+    public function test_mailable_helpers_use_configured_subjects_and_views(): void
     {
-        Mail::fake();
-        $lead = $this->createCard()->leads()->create([
-            'name' => 'Visitor',
-            'email' => 'not-an-email',
-            'consent_given' => false,
-            'submitted_at' => now(),
-        ]);
-        (new LaravelMailNotificationSender)->sendContactExchange($lead);
-        Mail::assertNothingSent();
-
-        Mail::fake();
-        $lead = $this->createCard([
-            'slug' => 'no-owner-recipients',
-            'lead_notification_emails' => [],
-            'lead_send_confirmation' => false,
-        ])->leads()->create([
-            'name' => 'Visitor',
-            'email' => 'visitor@example.test',
-            'consent_given' => true,
-            'submitted_at' => now(),
-        ]);
-        (new LaravelMailNotificationSender)->sendContactExchange($lead);
-        Mail::assertNothingSent();
-
         config([
+            'digital-business-cards.mail.owner_subject' => 'Custom owner subject',
+            'digital-business-cards.mail.confirmation_subject' => 'Custom confirmation subject',
             'digital-business-cards.mail.confirmation_view' => 'mail.custom-confirmation',
             'digital-business-cards.mail.owner_view' => 'mail.custom-owner',
         ]);
-        $this->assertSame('mail.custom-confirmation', (new ContactExchangeConfirmation($lead))->content()->view);
+        $lead = DigitalBusinessCardLead::factory()
+            ->for($this->createCard(), 'card')
+            ->create([
+                'name' => 'Visitor',
+                'email' => 'visitor@example.test',
+                'consent_given' => true,
+                'submitted_at' => now(),
+            ])
+            ->load('card');
+
+        $this->assertSame('Custom owner subject', (new ContactExchangeReceived($lead))->envelope()->subject);
+        $this->assertSame('Custom confirmation subject', (new ContactExchangeConfirmation($lead))->envelope()->subject);
         $this->assertSame('mail.custom-owner', (new ContactExchangeReceived($lead))->content()->view);
+        $this->assertSame('mail.custom-confirmation', (new ContactExchangeConfirmation($lead))->content()->view);
+    }
+
+    public function test_event_is_queue_safe_and_serializes_only_the_lead_identifier(): void
+    {
+        $lead = DigitalBusinessCardLead::factory()
+            ->for($this->createCard(), 'card')
+            ->create([
+                'name' => 'Visitor',
+                'consent_given' => true,
+                'submitted_at' => now(),
+            ]);
+
+        $event = new ContactExchangeCompleted((int) $lead->getKey());
+
+        $this->assertInstanceOf(ShouldDispatchAfterCommit::class, $event);
+        $this->assertSame($lead->getKey(), $event->leadId);
     }
 
     public function test_confirmation_email_uses_sanitized_theme_and_neutral_identity(): void

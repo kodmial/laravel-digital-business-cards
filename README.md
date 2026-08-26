@@ -66,7 +66,7 @@ default. Their public URL uses the configured `route_prefix` and the card slug.
 ## Configuration
 
 Publish the configuration when you need custom routes, middleware, models,
-storage, mail delivery, or package theme colors:
+storage, email templates, or package theme colors:
 
 ```bash
 php artisan vendor:publish --tag=digital-business-cards-config
@@ -85,9 +85,7 @@ Important settings in `config/digital-business-cards.php`:
 | `privacy_url` | Optional global privacy-policy URL used by consent forms |
 | `default_theme` | Neutral default background, accent, and text colors |
 | `models` | Application-specific model subclasses |
-| `notification_sender` | Replaceable contact notification implementation |
-| `notifications` | Default listener, queue connection, and queue name |
-| `mail` | Mailer, subjects, and overridable email views |
+| `mail` | Subjects and overridable views for the optional Mailable helpers |
 | `lead_export` | Export path, route name, middleware, and authorization ability |
 
 Cards are drafts by default. Publish a card explicitly after its content,
@@ -126,47 +124,79 @@ php artisan vendor:publish --tag=digital-business-cards-translations
 
 ### Mail
 
-Notifications use Laravel's configured mailer. Owner notifications are sent only
-to valid addresses configured on a card. Visitor confirmation is sent only when
-the card enables `lead_send_confirmation` and the submitted email is valid.
-The confirmation template uses the card's safely normalized palette and its logo
-or identity; it does not carry package or host-application branding.
+The package never sends email itself and never configures your mailer. After a
+contact exchange is stored, it dispatches a single event:
 
-The package dispatches `ContactExchangeCompleted` after the database transaction
-commits. Its default listener sends through the configured `NotificationSender`.
-Choose one of these extension points:
+```php
+DigitalCardKit\Laravel\Events\ContactExchangeCompleted // -> $event->leadId
+```
 
-- Set `notifications.queued` to `true` to queue the default listener. Optionally
-  set `queue_connection` and `queue_name`; a Laravel queue worker must be running.
-- Set `notification_sender` to an implementation of `NotificationSender` to
-  replace delivery while retaining the package listener.
-- Bind `NotificationSender` in the host service container. An existing binding
-  is respected by the package service provider.
-- Set `notifications.register_default_listener` to `false` and register any host
-  listener for `ContactExchangeCompleted`.
-- Change `mail.owner_view` or `mail.confirmation_view`, or publish the package
-  views, to replace the templates.
+The event fires only after the database transaction commits (it implements
+`ShouldDispatchAfterCommit`), and it carries just the lead identifier, so it is
+safe for queued listeners. Your application owns delivery: register a listener,
+decide who gets notified, and send whatever you like.
 
-Example custom listener registration:
+Register a listener in a service provider:
 
 ```php
 use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
 use Illuminate\Support\Facades\Event;
 
-Event::listen(ContactExchangeCompleted::class, SendExchangeToCrm::class);
+Event::listen(ContactExchangeCompleted::class, SendExchangeNotifications::class);
 ```
 
-The event serializes only the lead model identifier, without arbitrary
-eager-loaded relations, so it is safe to use with queued listeners. Custom lead
-models must extend the package lead model as described below.
+A minimal listener that notifies the card owner and thanks the visitor:
 
-Configure a Laravel mailer before enabling email delivery. When
-`notifications.queued` is enabled, configure a queue connection and keep a
-worker running:
+```php
+use DigitalCardKit\Laravel\Events\ContactExchangeCompleted;
+use DigitalCardKit\Laravel\Mail\ContactExchangeConfirmation;
+use DigitalCardKit\Laravel\Mail\ContactExchangeReceived;
+use DigitalCardKit\Laravel\Models\DigitalBusinessCardLead;
+use DigitalCardKit\Laravel\Support\Config;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\Mail;
+
+class SendExchangeNotifications implements ShouldQueue
+{
+    use Queueable;
+
+    public function handle(ContactExchangeCompleted $event): void
+    {
+        /** @var DigitalBusinessCardLead $lead */
+        $lead = Config::model('lead')::findOrFail($event->leadId);
+        $lead->loadMissing('card');
+
+        foreach ($lead->card->lead_notification_emails ?: [] as $email) {
+            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                Mail::to($email)->send(new ContactExchangeReceived($lead));
+            }
+        }
+
+        if ($lead->card->lead_send_confirmation && $lead->consent_given
+            && filter_var($lead->email, FILTER_VALIDATE_EMAIL)) {
+            Mail::to($lead->email)->send(new ContactExchangeConfirmation($lead));
+        }
+    }
+}
+```
+
+The packaged Mailables are optional helpers — plain Laravel Mailables you can
+use, queue, or replace with your own. Their subjects and views are configurable
+through the `mail.owner_subject`, `mail.confirmation_subject`,
+`mail.owner_view`, and `mail.confirmation_view` settings; publish the package
+views to customize the templates. The confirmation template uses the card's
+safely normalized palette and its logo or identity; it does not carry package
+or host-application branding.
+
+If the listener implements `ShouldQueue` it runs on your configured queue
+connection, keeping a queue worker running:
 
 ```bash
 php artisan queue:work
 ```
+
+Custom lead models must extend the package lead model as described below.
 
 ## Lead export authorization
 
@@ -291,8 +321,9 @@ Released migrations are not rewritten during upgrades.
   run `php artisan storage:link` when using Laravel's default `public` disk.
 - If the admin resources are missing, confirm that
   `DigitalBusinessCardsPlugin::make()` is registered on the intended panel.
-- If notification emails are not delivered, check the configured mailer,
-  recipient addresses, and the queue worker when queued delivery is enabled.
+- If notification emails are not delivered, check your own listener for
+  `ContactExchangeCompleted`, the configured mailer, recipient addresses, and
+  the queue worker when delivery is queued.
 - If published CSS or JavaScript appears stale after an update, republish assets
   with `--force` and clear the browser or proxy cache.
 
