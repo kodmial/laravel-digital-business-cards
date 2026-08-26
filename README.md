@@ -85,8 +85,13 @@ Important settings in `config/digital-business-cards.php`:
 | `privacy_url` | Optional global privacy-policy URL used by consent forms |
 | `default_theme` | Neutral default background, accent, and text colors |
 | `models` | Application-specific model subclasses |
-| `mail` | Subjects and overridable views for the optional Mailable helpers |
+| `mail` | Subjects and views for the optional Mailable helpers sent from your own listener |
 | `lead_export` | Export path, route name, middleware, and authorization ability |
+
+Routes and views can additionally be tuned through `asset_route_prefix`,
+`assets_url`, and `card_view`; see the sections below. Since v2 the package
+contains no notification settings at all — email delivery belongs entirely to
+the host application (see [Handling the contact exchange event](#handling-the-contact-exchange-event)).
 
 Cards are drafts by default. Publish a card explicitly after its content,
 privacy URL, recipients, and appearance have been reviewed. A card-specific
@@ -122,7 +127,7 @@ Translations can be published for application-specific wording:
 php artisan vendor:publish --tag=digital-business-cards-translations
 ```
 
-### Mail
+## Handling the contact exchange event
 
 The package never sends email itself and never configures your mailer. After a
 contact exchange is stored, it dispatches a single event:
@@ -133,8 +138,9 @@ DigitalCardKit\Laravel\Events\ContactExchangeCompleted // -> $event->leadId
 
 The event fires only after the database transaction commits (it implements
 `ShouldDispatchAfterCommit`), and it carries just the lead identifier, so it is
-safe for queued listeners. Your application owns delivery: register a listener,
-decide who gets notified, and send whatever you like.
+safe for queued listeners. Your application owns delivery: since v2 there is no
+packaged listener, so if you want anyone notified by email, registering your own
+listener is required. Decide who gets notified, and send whatever you like.
 
 Register a listener in a service provider:
 
@@ -290,6 +296,36 @@ own Vitest configuration and a jsdom environment; neither suite depends on a
 host Laravel application.
 
 ## Upgrading
+
+### From v1 to v2 (breaking)
+
+v2.0.0 removes the packaged notification pipeline. The package no longer sends
+mail; after a contact exchange it only dispatches
+`ContactExchangeCompleted` (unchanged name and `leadId` payload).
+
+What was removed:
+
+- The default listener `SendContactExchangeNotifications` and its queued wrapper
+  `QueueContactExchangeNotifications`.
+- The `NotificationSender` contract and the Laravel mail implementation.
+- The `src/Notifications` classes, except the Mailable helpers
+  `Mail\ContactExchangeReceived` and `Mail\ContactExchangeConfirmation`, which
+  remain as optional helpers.
+- Configuration keys: `notifications.register_default_listener`,
+  `notifications.queued`, `notifications.queue_connection`,
+  `notifications.queue_name`, `notification_sender`, and `mail.mailer`.
+- The `illuminate/notifications` dependency (the optional Mailable helpers keep
+  using `illuminate/mail`).
+
+What you must do:
+
+1. Remove the obsolete keys from your published
+   `config/digital-business-cards.php` (or republish it and reapply your
+   customizations).
+2. Register your own listener for `ContactExchangeCompleted` in a service
+   provider and send mail with your own mechanism — see
+   [Handling the contact exchange event](#handling-the-contact-exchange-event)
+   for a complete example built on the packaged Mailable helpers.
 
 Update the package and run outstanding migrations:
 
